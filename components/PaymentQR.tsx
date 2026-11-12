@@ -12,11 +12,11 @@ export interface QrCode {
   rows?: [string, string][];
 }
 
-export const CARD = 'rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] shadow-xl shadow-black/20';
+export const CARD = 'min-w-0 rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] shadow-xl shadow-black/20';
 
 // "Instant Direct Giving": one QR card per configured method (Swish, PayPal,
-// bank GiroCode). SVGs are generated server-side (lib/qr.ts) so they are
-// trusted. Everything shown is configured in /admin → Betalkonton.
+// card). SVGs are generated server-side (lib/qr.ts) so they are
+// trusted. Everything shown is configured in /admin → Hemsida & betalsätt.
 export default function PaymentQR({
   lang,
   codes
@@ -24,13 +24,11 @@ export default function PaymentQR({
   lang: Lang;
   codes: { swish?: QrCode; paypal?: QrCode; card?: QrCode; bank?: QrCode };
 }) {
-  const cards = [codes.swish, codes.paypal, codes.card, codes.bank?.svg ? codes.bank : undefined].filter(Boolean) as QrCode[];
+  const cards = [codes.swish, codes.paypal, codes.card].filter(Boolean) as QrCode[];
   if (cards.length === 0) return null;
   const hintKey = { swish: 'scanSwish', paypal: 'scanPaypal', card: 'scanCard', bank: 'scanBank' } as const;
   const cols =
-    cards.length >= 3
-      ? 'min-[480px]:grid-cols-2 xl:grid-cols-3'
-      : cards.length === 2
+    cards.length >= 2
         ? 'min-[480px]:grid-cols-2'
         : 'mx-auto w-full max-w-xs';
 
@@ -41,9 +39,9 @@ export default function PaymentQR({
 
       <div className={`mt-6 grid grid-cols-1 gap-4 ${cols}`}>
         {cards.map((c) => {
-          const title = c.kind === 'bank' ? t(lang, 'bankCard') : t(lang, c.kind);
+          const title = t(lang, c.kind);
           return (
-            <div key={c.kind} className="flex flex-col items-center rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
+            <div key={c.kind} className="flex min-w-0 flex-col items-center rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
               <div className="mb-3 text-sm font-bold uppercase tracking-widest text-mosque-gold">{title}</div>
               {c.imageUrl ? (
                 <div className="aspect-square w-full max-w-[10.5rem] rounded-xl bg-white p-2">
@@ -61,7 +59,7 @@ export default function PaymentQR({
               <div className="mt-3 text-sm text-mosque-mint/80">{t(lang, hintKey[c.kind])}</div>
               {c.detail && (
                 <div className="mt-3 flex w-full max-w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2.5">
-                  <span className="min-w-0 break-all font-mono text-lg font-extrabold tracking-wide text-white" dir="ltr">{c.detail}</span>
+                  <span className={`min-w-0 flex-1 font-mono font-extrabold text-white ${c.kind === 'swish' ? 'whitespace-nowrap text-base tracking-normal' : 'break-all text-sm leading-6'}`} dir="ltr">{c.detail}</span>
                   <CopyButton value={c.detail} label={t(lang, 'copy')} doneLabel={t(lang, 'copied')} />
                 </div>
               )}

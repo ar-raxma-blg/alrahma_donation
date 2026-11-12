@@ -10,13 +10,13 @@ import RowActions from './RowActions';
 
 type Params = { status?: string; method?: string; campaign?: string; period?: string; q?: string };
 const TONE: Record<string, 'green' | 'amber' | 'red' | 'grey'> = { confirmed: 'green', awaiting_approval: 'amber', pending_provider: 'amber', rejected: 'grey', refunded: 'grey' };
-const select = 'rounded-lg border border-mosque-ink/15 bg-white px-3 py-2 text-sm';
+const select = 'rounded-xl border border-mosque-ink/15 bg-mosque-cream/40 px-4 py-3 text-sm outline-none focus:border-mosque-emerald focus:bg-white';
 
-export default async function Transactions({ searchParams }: { searchParams: Params }) {
+export default async function Transactions({ searchParams }: { searchParams: Promise<Params> }) {
   const db = supabaseAdmin();
   const user = await getAdminUser();
   const today = stockholmToday();
-  const p = searchParams;
+  const p = await searchParams;
 
   let q = db
     .from('transactions')

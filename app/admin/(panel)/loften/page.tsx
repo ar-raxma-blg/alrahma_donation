@@ -7,10 +7,11 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 
 const TONE: Record<PledgeState, 'green' | 'amber' | 'red' | 'grey'> = { on_plan: 'green', overdue: 'red', fulfilled: 'grey', cancelled: 'grey' };
 
-export default async function Pledges({ searchParams }: { searchParams: { status?: string } }) {
+export default async function Pledges({ searchParams: searchParamsPromise }: { searchParams: Promise<{ status?: string }> }) {
+  const searchParams = await searchParamsPromise;
   const db = supabaseAdmin();
   const today = stockholmToday();
-  const [{ data: pledges, error }, { data: bal }] = await Promise.all([
+  const [{ data: pledges, error }, { data: bal, error: balanceError }] = await Promise.all([
     db.from('pledges').select('id, total_sek, status, created_at, campaign:campaigns(title), donor:donor_profiles(full_name, phone, email)').order('created_at', { ascending: false }),
     db.from('installment_balances').select('installment_id, pledge_id, seq, due_on, amount_sek, paid_sek, outstanding_sek')
   ]);
@@ -37,21 +38,20 @@ export default async function Pledges({ searchParams }: { searchParams: { status
           <Link key={k} href={k ? `/admin/loften?status=${k}` : '/admin/loften'} className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${(filter ?? '') === k ? 'bg-mosque-ink text-white' : 'bg-mosque-ink/10'}`}>{l}</Link>
         ))}
       </div>
-      {error ? (
-        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">Kunde inte hämta löftena: {error.message}</div>
+      {error || balanceError ? (
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">Kunde inte hämta löftena och deras saldon. Ladda om sidan och försök igen.</div>
       ) : shown.length === 0 ? (
         <Card className="text-center"><p className="font-bold">{filter ? 'Inga löften med den statusen' : 'Inga löften än'}</p><p className="mt-1 text-sm text-mosque-ink/60">Skapa ett löfte när någon vill betala en större summa i delar.</p></Card>
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full min-w-[760px] text-sm">
-            <thead className="bg-mosque-cream text-left text-xs text-mosque-ink/60"><tr><th className="p-3">Givare</th><th className="p-3">Kampanj</th><th className="p-3">Totalt</th><th className="p-3">Betalt</th><th className="p-3">Kvar</th><th className="p-3">Nästa förfallo</th><th className="p-3">Status</th></tr></thead>
+            <thead className="bg-mosque-cream text-left text-xs text-mosque-ink/60"><tr><th className="p-3">Givare</th><th className="p-3">Totalt</th><th className="p-3">Betalt</th><th className="p-3">Kvar</th><th className="p-3">Nästa förfallo</th><th className="p-3">Status</th></tr></thead>
             <tbody>
               {shown.map(({ p, paid, next, state }) => {
                 const donor = p.donor as unknown as { full_name: string };
                 return (
                   <tr key={p.id} className="border-t border-mosque-ink/10">
                     <td className="p-3 font-bold"><Link href={`/admin/loften/${p.id}`} className="hover:underline">{donor?.full_name}</Link></td>
-                    <td className="p-3">{(p.campaign as unknown as { title: string })?.title}</td>
                     <td className="p-3 tabular-nums">{fmtSEK(p.total_sek)}</td>
                     <td className="p-3 tabular-nums">{fmtSEK(paid)}</td>
                     <td className="p-3 tabular-nums">{fmtSEK(Math.max(p.total_sek - paid, 0))}</td>

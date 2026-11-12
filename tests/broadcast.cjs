@@ -4,7 +4,7 @@ const ts = require('typescript');
 function load(name) {
   const mod = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(`lib/${name}.ts`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } }).outputText;
-  new Function('require','exports','module',code)(id => id === './communication' ? load('communication') : require(id),mod.exports,mod);
+  new Function('require','exports','module',code)(id => id.startsWith('./') ? load(id.slice(2)) : require(id),mod.exports,mod);
   return mod.exports;
 }
 const { recipientAddress, isSwedishSmsAddress } = load('communication');

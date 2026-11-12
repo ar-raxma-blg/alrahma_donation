@@ -3,7 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
 // Admin-only: approve or reject a pending donation.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const guard = await requireAdmin(req);
   if (guard) return guard;
 
@@ -25,7 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // Edit a donation record (name/amount/method) — e.g. fixing a typo'd cash entry.
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const guard = await requireAdmin(req);
   if (guard) return guard;
 
@@ -42,7 +44,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ donation: data });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const guard = await requireAdmin(req);
   if (guard) return guard;
 

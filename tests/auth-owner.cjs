@@ -16,7 +16,7 @@ const mod = { exports: {} };
 const code = ts.transpileModule(fs.readFileSync('lib/auth.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } }).outputText;
 new Function('require', 'exports', 'module', code)(id => {
   if (id === '@supabase/ssr') return { createServerClient: () => client };
-  if (id === 'next/headers') return { cookies: () => ({ getAll: () => [] }) };
+  if (id === 'next/headers') return { cookies: async () => ({ getAll: () => [] }) };
   if (id === 'next/server') return { NextResponse: { json: (body, init) => ({ body, status: init.status }) } };
   return require(id);
 }, mod.exports, mod);

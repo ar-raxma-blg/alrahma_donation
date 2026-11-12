@@ -4,7 +4,7 @@ import { PublicDonation, Lang } from '@/lib/types';
 import PaymentQR, { QrCode } from '@/components/PaymentQR';
 
 import BankTransfer from '@/components/BankTransfer';
-import LanguageDropdown from '@/components/LanguageDropdown';
+import PublicHeader from '@/components/PublicHeader';
 import LiveFeed from '@/components/LiveFeed';
 import ProgressCard from '@/components/ProgressCard';
 import { t } from '@/lib/i18n';
@@ -19,7 +19,8 @@ export default function TrackerClient({
   subtitle,
   isLive,
   pausedMessage,
-  qrCodes
+  qrCodes,
+  refreshProgress = true
 }: {
   goal: number;
   raised: number;
@@ -28,6 +29,7 @@ export default function TrackerClient({
   isLive: boolean;
   pausedMessage?: string | null;
   qrCodes: { swish?: QrCode; paypal?: QrCode; card?: QrCode; bank?: QrCode };
+  refreshProgress?: boolean;
 }) {
   const [lang, setLang] = useState<Lang>('en');
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -38,16 +40,7 @@ export default function TrackerClient({
       className="min-h-screen w-full bg-[radial-gradient(circle_at_50%_-10%,#1a3c21_0%,#0e2a14_55%,#081a0c_100%)] px-4 pb-10 pt-5 sm:px-8 sm:pb-12 sm:pt-8 text-mosque-cream"
     >
       <div className="mx-auto max-w-[1120px]">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Masjid Al-Rahma" className="h-11 w-11 flex-shrink-0 sm:h-12 sm:w-12" />
-            <div>
-              <div className="text-base font-extrabold sm:text-lg">{t(lang, 'mosqueName')}</div>
-              <div className="text-xs font-medium text-mosque-mint/70">{subtitle}</div>
-            </div>
-          </div>
-          <LanguageDropdown lang={lang} onChange={setLang} />
-        </div>
+        <PublicHeader lang={lang} onLanguageChange={setLang} subtitle={subtitle} />
 
         {/* <header className="mx-auto mb-8 max-w-3xl text-center sm:mb-10">
           <span className="inline-block rounded-full border border-mosque-gold/30 bg-mosque-gold/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-mosque-gold">
@@ -58,7 +51,7 @@ export default function TrackerClient({
         </header>
  */}
         <div className="mb-5 sm:mb-6">
-          <ProgressCard lang={lang} raised={raised} goal={goal} />
+          <ProgressCard lang={lang} raised={raised} goal={goal} refresh={refreshProgress} />
         </div>
 
         {isLive ? (

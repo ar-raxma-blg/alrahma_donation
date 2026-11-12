@@ -12,7 +12,8 @@ import RefundForm from './RefundForm';
 
 const when = (iso: string) => new Date(iso).toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', dateStyle: 'medium', timeStyle: 'short' });
 
-export default async function TransactionDetail({ params }: { params: { id: string } }) {
+export default async function TransactionDetail({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   if (!/^[0-9a-f-]{36}$/.test(params.id)) notFound();
   const db = supabaseAdmin();
   const [{ data: t }, names, user] = await Promise.all([
@@ -40,7 +41,7 @@ export default async function TransactionDetail({ params }: { params: { id: stri
   const rows: [string, React.ReactNode][] = [
     ['Belopp', <b key="a" className="tabular-nums">{fmtSEK(t.amount_sek)}</b>],
     ['Datum', fmtDate(t.received_on)],
-    ['Kampanj', campaign ? <Link key="c" href={`/admin/kampanjer/${campaign.id}`} className="underline">{campaign.title}</Link> : '–'],
+    ['Kampanj', campaign ? <span key="c">{campaign.title}</span> : '–'],
     ['Betalsätt', METHOD_SV[t.method]],
     ['Givare', t.display_name ?? 'Anonym'],
     ['Kopplad givare', donor?.full_name ?? '–'],

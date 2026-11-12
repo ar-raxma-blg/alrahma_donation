@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth';
-import { providerStatus, sendSms, sendEmail, sendWhatsApp } from '@/lib/broadcast';
+import { getAdminUser, requireAdmin } from '@/lib/auth';
+import { elksBalance, providerStatus, sendSms, sendEmail, sendWhatsApp } from '@/lib/broadcast';
+import { BroadcastDiagnostics, BroadcastFailure, readBroadcastDiagnostics } from '@/lib/broadcast-diagnostics';
+import { writeAudit } from '@/lib/admin/audit';
 import { Channel } from '@/lib/communication';
 import { loadBroadcastRecipients } from '@/lib/broadcast-server';
 import { broadcastAddresses, recipientId } from '@/lib/broadcast-targets';
@@ -19,8 +21,11 @@ export async function GET(req: NextRequest) {
     loadBroadcastRecipients()
   ]);
   if (history.error || templates.error) return NextResponse.json({ error: 'Utskick är inte redo. Kontrollera databasen.' }, { status: 503 });
+  const ids = history.data.map(entry => entry.id);
+  const details = ids.length ? await db.from('audit_log').select('object_id, changes').eq('action', 'broadcast.result').eq('object_type', 'broadcast').in('object_id', ids) : { data: [], error: null };
+  const diagnostics = new Map((details.data ?? []).map(entry => [entry.object_id, readBroadcastDiagnostics(entry.changes?.diagnostics?.to)]));
   // Templates needing pledge variables belong to the donation notification queue.
-  return NextResponse.json({ log: history.data, providers: providerStatus(), recipients, templates: templates.data.filter(t => !t.body.includes('{{')) });
+  return NextResponse.json({ log: history.data.map(entry => ({ ...entry, diagnostics: diagnostics.get(entry.id) ?? null })), diagnosticHistoryWarning: !!details.error, providers: providerStatus(), recipients, templates: templates.data.filter(t => !t.body.includes('{{')) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(req: NextRequest) {
@@ -35,6 +40,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Välj upp till 50 givare och ange ett giltigt meddelande.' }, { status: 400 });
   }
   const kind = channel as Channel;
+  const user = await getAdminUser('owner');
+  if (!user) return NextResponse.json({ error: 'Du är inte inloggad som Owner.' }, { status: 403 });
   if (!providerStatus()[kind]) return NextResponse.json({ error: `${channel === 'whatsapp' ? 'WhatsApp väntar på Meta och API-inställningar' : 'Leverantören är inte konfigurerad'}. Inget skickades.` }, { status: 503 });
   const db = supabaseAdmin();
   let template = null;
@@ -52,13 +59,27 @@ export async function POST(req: NextRequest) {
   if (logError?.code === '23505') return NextResponse.json({ error: 'Utskicket har redan startats. Kontrollera historiken och 46elks innan du försöker igen.' }, { status: 409 });
   if (logError) return NextResponse.json({ error: 'Kunde inte skapa utskicksloggen. Inget skickades.' }, { status: 500 });
   let accepted = 0;
+  const failures: BroadcastFailure[] = [];
   for (let i = 0; i < addresses.length; i += 10) {
     const results = await Promise.all(addresses.slice(i, i + 10).map(address =>
       kind === 'sms' ? sendSms(address, message.trim()) : kind === 'email' ? sendEmail(address, 'Al-Rahma — donationsuppdatering', message.trim()) : sendWhatsApp(address, template.provider_name, template.provider_language)
     ));
     accepted += results.filter(result => result.ok).length;
+    for (const result of results.filter(result => !result.ok)) {
+      const code = result.failureCode ?? 'unknown';
+      const existing = failures.find(f => f.code === code && f.httpStatus === result.httpStatus);
+      if (existing) existing.count++;
+      else failures.push({ code, count: 1, ...(result.httpStatus === undefined ? {} : { httpStatus: result.httpStatus }) });
+    }
   }
   const failed = addresses.length - accepted;
   const { error: auditError } = await db.from('broadcast_log').update({ accepted_count: accepted, failed_count: failed, status: accepted === 0 ? 'failed' : failed ? 'partial' : 'accepted' }).eq('id', log.id);
-  return NextResponse.json({ accepted, failed, excludedNonSwedish, auditWarning: !!auditError });
+  const diagnostics: BroadcastDiagnostics = { failures, balanceAfter: null };
+  if (kind === 'sms' && failed) {
+    try { diagnostics.balanceAfter = { ...await elksBalance(), checkedAt: new Date().toISOString() }; } catch {}
+  }
+  let diagnosticWarning = false;
+  try { await writeAudit({ user, action: 'broadcast.result', objectType: 'broadcast', objectId: log.id, changes: { diagnostics: { from: null, to: diagnostics } } }); }
+  catch { diagnosticWarning = true; }
+  return NextResponse.json({ accepted, failed, excludedNonSwedish, diagnostics, auditWarning: !!auditError || diagnosticWarning });
 }

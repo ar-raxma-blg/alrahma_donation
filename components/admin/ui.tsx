@@ -1,20 +1,13 @@
 import Link from 'next/link';
 import { fmtSEK } from '@/lib/format';
+import PanelHeader, { adminPanelPrimaryButton, adminPanelSecondaryButton } from './PanelHeader';
 
-export function PageHead({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-extrabold">{title}</h1>
-        {sub && <p className="mt-1 max-w-2xl text-sm text-mosque-ink/60">{sub}</p>}
-      </div>
-      {action}
-    </div>
-  );
+export function PageHead({ title, sub, action, category = 'Administration' }: { title: string; sub?: string; action?: React.ReactNode; category?: string }) {
+  return <div className="mb-6"><PanelHeader category={category} title={title} description={sub} action={action} /></div>;
 }
 
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`min-w-0 rounded-2xl border border-mosque-ink/10 bg-white p-5 ${className}`}>{children}</div>;
+  return <div className={`min-w-0 rounded-2xl border border-mosque-ink/10 bg-white p-5 shadow-sm ${className}`}>{children}</div>;
 }
 
 const PILL: Record<string, string> = {
@@ -29,7 +22,7 @@ export function Pill({ tone, children }: { tone: keyof typeof PILL; children: Re
 
 export function ButtonLink({ href, children, primary }: { href: string; children: React.ReactNode; primary?: boolean }) {
   return (
-    <Link href={href} className={`inline-block rounded-lg px-4 py-2.5 text-sm font-bold ${primary ? 'bg-mosque-emerald text-white hover:brightness-110' : 'bg-mosque-ink/10 text-mosque-ink hover:bg-mosque-ink/15'}`}>
+    <Link href={href} className={`inline-flex items-center justify-center text-center ${primary ? adminPanelPrimaryButton : adminPanelSecondaryButton}`}>
       {children}
     </Link>
   );

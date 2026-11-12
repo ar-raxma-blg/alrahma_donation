@@ -1,10 +1,11 @@
 'use client';
 
+import { adminPanelInput, adminPanelPrimaryButton, adminPanelSecondaryButton } from '@/components/admin/PanelHeader';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { checkImport, commitImport, ImportRow, RowCheck } from '../actions';
 
-const input = 'w-full rounded-lg border border-mosque-ink/15 bg-white px-3 py-2.5 text-sm';
+const input = adminPanelInput;
 const label = 'mb-1.5 block text-xs font-bold text-mosque-ink/60';
 const FIELDS = [
   { key: 'received_on', label: 'Datum (ÅÅÅÅ-MM-DD)', required: true },
@@ -99,7 +100,7 @@ export default function ImportClient({ campaigns }: { campaigns: { id: string; t
       <div className="max-w-xl rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm">
         <b>{done.imported} rader importerade.</b> {done.skipped > 0 && `${done.skipped} rader hoppades över (fel eller dubbletter). `}
         De väntar nu på godkännande av en annan admin.
-        <div className="mt-3"><button onClick={() => router.push('/admin/transaktioner?status=awaiting_approval')} className="rounded-lg bg-mosque-emerald px-4 py-2 font-bold text-white">Visa väntande</button></div>
+        <div className="mt-3"><button onClick={() => router.push('/admin/transaktioner?status=awaiting_approval')} className={adminPanelPrimaryButton}>Visa väntande</button></div>
       </div>
     );
   }
@@ -139,7 +140,7 @@ export default function ImportClient({ campaigns }: { campaigns: { id: string; t
             ))}
           </div>
           <p className="mt-3 text-xs text-mosque-ink/50">Namn: bara förnamn sparas. Utan kolumn för betalsätt markeras raderna som Import. {body.length} rader hittades.</p>
-          <button onClick={preview} disabled={pending} className="mt-4 rounded-lg bg-mosque-ink px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{pending && !checks ? 'Kontrollerar…' : 'Förhandsgranska'}</button>
+          <button onClick={preview} disabled={pending} className={`mt-4 ${adminPanelPrimaryButton}`}>{pending && !checks ? 'Kontrollerar…' : 'Förhandsgranska'}</button>
         </div>
       )}
 
@@ -168,7 +169,7 @@ export default function ImportClient({ campaigns }: { campaigns: { id: string; t
               </tbody>
             </table>
           </div>
-          <button onClick={submit} disabled={pending || ok === 0} className="mt-4 rounded-lg bg-mosque-emerald px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+          <button onClick={submit} disabled={pending || ok === 0} className={`mt-4 ${adminPanelPrimaryButton}`}>
             {pending ? 'Importerar…' : `Skicka ${ok} rader för godkännande`}
           </button>
         </div>

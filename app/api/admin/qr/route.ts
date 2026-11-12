@@ -11,7 +11,7 @@ const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg',
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin(req, 'owner');
   if (guard) return guard;
 
   const form = await req.formData();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin(req, 'owner');
   if (guard) return guard;
 
   const kind = req.nextUrl.searchParams.get('kind') as Kind;

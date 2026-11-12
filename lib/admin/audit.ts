@@ -13,7 +13,7 @@ export interface AuditEntry {
 // Every server action that changes data calls this. The table is append-only
 // (see supabase/phase1.sql), so entries can never be edited or removed.
 export async function writeAudit(e: AuditEntry) {
-  const ip = headers().get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
   const { error } = await supabaseAdmin().from('audit_log').insert({
     user_id: e.user.id,
     user_name: e.user.name,

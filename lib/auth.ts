@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 // (email/password or magic link) for staff login, then seed the admins
 // table with their user ids.
 export async function requireAdmin(req: NextRequest, requiredRole?: 'owner'): Promise<NextResponse | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -44,10 +44,11 @@ export async function requireAdmin(req: NextRequest, requiredRole?: 'owner'): Pr
 // For server components and server actions (no NextRequest available).
 // Returns the signed-in admin, or null if not signed in / not on the allow-list.
 export async function getAdminUser(requiredRole?: 'owner'): Promise<{ id: string; name: string } | null> {
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    { cookies: { getAll: () => cookies().getAll(), setAll: () => {} } }
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   );
   const {
     data: { user }
@@ -65,10 +66,11 @@ export async function getAdminUser(requiredRole?: 'owner'): Promise<{ id: string
 // Signed in at all (admin or not). Used to tell "not logged in" apart from
 // "logged in but not on the admins allow-list".
 export async function getSessionUser(): Promise<{ id: string; email: string } | null> {
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    { cookies: { getAll: () => cookies().getAll(), setAll: () => {} } }
+    { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
   );
   const {
     data: { user }

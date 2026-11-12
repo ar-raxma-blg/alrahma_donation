@@ -6,6 +6,33 @@ Deploy the current `feature/abdiaziz-development` branch (or merge it into the b
 
 ## 1. Database status
 
+**Homepage controls, 12 November 2026:** Applied
+`202611120001_homepage_settings.sql` to `pqtetpitwmmzsmiflyjb` through the SQL
+Editor in a transaction. Verified `opening_raised_sek` and
+`save_homepage_settings(...)` exist. Existing totals and payment details were
+not changed. The Owner editor (`/admin/betalsatt`), public progress refresh,
+and removal of the PayPal/Swish placeholder require deploying the updated
+app code. The editor's test amounts were previewed locally and discarded.
+Do not rerun `setup.sql` on this database.
+
+**QR image publishing, 12 November 2026:** Applied
+`202611120002_homepage_qr_images.sql` to the same project. Verified the
+capability function returns true, public/anon execution is denied, and the
+existing displayed raised amount (0) and goal (15,000,000) remain unchanged.
+The local editor now enables Swish/PayPal uploads. No live payment recipient,
+QR image or financial amount was changed during testing.
+
+**Isolated browser verification:** Built the production app against the
+loopback PostgreSQL/Auth/Storage fixture. Verified Owner login, both file
+uploads, previews, staging without publication, reviewed save, persisted
+images after reload, all payment fields, 25,000 / 100,000 = 25%, and an
+automatic refresh to 40,000 / 200,000 = 20% without reloading. Removed both
+custom images and confirmed generated-code fallback. A disguised non-image
+PNG was rejected. The served uploaded Swish PNG was independently decoded
+as `C1235310222;;;6`. No test payments or messages were sent. Test data never
+reached the live database. The full test suite and isolated production build
+passed; merge/deployment of app code has not been performed.
+
 The **previous** Supabase project received these migrations through the SQL Editor on 18 October 2026, in filename order:
 
 - `supabase/migrations/202610130001_payment_qr.sql`
@@ -105,3 +132,11 @@ order by u.email;
 ```
 
 The database returned exactly two Owner rows, and the local server key read the same two rows. Login and Utskick access still need an end-to-end check after the hosted app uses this project. The role currently restricts Utskick only; it does not implement the later full Owner/Kassör/Läsare permissions plan.
+
+## Simplified admin and manual pledges (12 November)
+
+Unfinished navigation entries (campaign management, donor directory, event mode, users/roles) are hidden, with data and authorization unchanged. Utskick displays configured channels only. No schema migration is needed for this scope change: the server lazily inserts a private draft `al-rahma-main` bookkeeping collection using the existing unique slug constraint, without updating public homepage totals or changing old campaigns. New pledges need donor/amount/dates only and default to no automatic reminders. Each instalment links to a prefilled manual cash/bank-transfer form. A second admin approves it from the pledge Payments tab or Transactions; only confirmed transactions reduce the balance. Partial payments, fulfilled status, refunds and cancellation are covered by PostgreSQL-backed server-action tests (`tests/pledges.cjs`). Browser verification uses only isolated fixture accounts/data; no real pledges/payments were created.
+
+## Översikt dashboard (12 November)
+
+The dashboard reads homepage totals from `campaign_totals` using `publicRaised`, renders the shared `ProgressCard`, and refreshes from `/api/public/progress` every 15 seconds and on mount/focus/visibility return. Owner edit links target `#insamling` and `#betaluppgifter` in the existing settings editor; the public homepage opens in a new tab. Registered transaction amounts remain visibly separate from the manually adjusted public total. Monthly totals use confirmed transactions within the current Stockholm calendar month, matching Reports net received. Active unpaid pledges and monthly transactions are paginated; failed reads are not presented as zero. Broadcast metadata and edit shortcuts remain Owner-only. No schema migration or live data edit is needed. PostgreSQL-backed `tests/overview.cjs` verifies public endpoint parity, summary calculations, permissions and read failures. Isolated browser testing verified 125,000 / 500,000 / 25% on both pages, the settings/website/Utskick links, and widths 320–1440 px.

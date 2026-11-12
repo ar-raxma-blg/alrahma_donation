@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!addresses.length) return NextResponse.json({ error: 'Inga valda givare har ett giltigt svenskt nummer (+46).' }, { status: 400 });
     const estimate = await estimateSmsBatch(addresses, message.trim());
     return NextResponse.json({ ...estimate, excludedNonSwedish });
-  } catch {
-    return NextResponse.json({ error: 'Kunde inte hämta en säker kostnadsuppskattning från 46elks. Inget SMS skickades.' }, { status: 503 });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error && error.message.startsWith('46elks-kontot får inte') ? error.message : 'Kunde inte hämta en säker kostnadsuppskattning från 46elks.' }, { status: 503 });
   }
 }

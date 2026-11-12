@@ -4,12 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { writeAudit } from '@/lib/admin/audit';
 import { getAdminUser } from '@/lib/auth';
+import { mainCollectionId } from '@/lib/admin/main-collection';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 const payloadSchema = z.object({
-  campaign_id: z.string().uuid('Välj en kampanj.'),
   donor_id: z.string().uuid().optional(),
   new_donor: z
     .object({
@@ -25,7 +25,7 @@ const payloadSchema = z.object({
   installments: z
     .array(
       z.object({
-        due_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Varje delbetalning behöver ett datum.'),
+        due_on: z.iso.date('Varje delbetalning behöver ett giltigt datum.'),
         amount_sek: z.coerce.number().int('Delbetalningar ska vara i hela kronor.').positive('Varje delbetalning måste vara större än 0 kr.')
       })
     )
@@ -47,6 +47,8 @@ export async function createPledge(input: PledgePayload): Promise<Result<{ id: s
   if (sum !== v.total_sek) return { ok: false, error: `Delbetalningarna summerar till ${sum} kr men totalen är ${v.total_sek} kr.` };
   if (!v.donor_id && !v.new_donor) return { ok: false, error: 'Välj en givare eller skapa en ny.' };
 
+  let campaignId: string;
+  try { campaignId = await mainCollectionId(); } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Kunde inte förbereda insamlingen.' }; }
   const db = supabaseAdmin();
   let donorId = v.donor_id;
   let createdDonor = false;
@@ -73,7 +75,7 @@ export async function createPledge(input: PledgePayload): Promise<Result<{ id: s
 
   const { data: pledge, error } = await db
     .from('pledges')
-    .insert({ campaign_id: v.campaign_id, donor_id: donorId, total_sek: v.total_sek, reminders: v.reminders })
+    .insert({ campaign_id: campaignId, donor_id: donorId, total_sek: v.total_sek, reminders: false })
     .select('id')
     .single();
   if (error) {

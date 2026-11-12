@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Card } from '@/components/admin/ui';
-import { cancelPledge, setReminders } from '../actions';
+import { cancelPledge } from '../actions';
 
 export default function PledgeSettings({ id, reminders, cancelled, cancelReason, contact }: { id: string; reminders: boolean; cancelled: boolean; cancelReason: string | null; contact: { phone: string | null; email: string | null } }) {
   const router = useRouter();
@@ -22,14 +22,7 @@ export default function PledgeSettings({ id, reminders, cancelled, cancelReason,
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
-      <Card>
-        <h2 className="mb-2 text-base font-extrabold">Påminnelser</h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={reminders} disabled={pending || cancelled} onChange={(e) => run(() => setReminders(id, e.target.checked))} />
-          Påminn 2 dagar före varje förfallodag
-        </label>
-        <p className="mt-2 text-xs text-mosque-ink/50">Kontakt: {contact.phone ?? 'ingen telefon'} · {contact.email ?? 'ingen e-post'}. Påminnelserna skickas först när Utskick är byggt och en leverantör är ansluten.</p>
-      </Card>
+      <p className="text-sm text-mosque-ink/60">Betalningar följs upp manuellt. Inga automatiska påminnelser skickas för nya löften.</p>
 
       <Card>
         <h2 className="mb-2 text-base font-extrabold">Avbryt löftet</h2>

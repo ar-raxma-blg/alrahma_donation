@@ -19,7 +19,7 @@ export interface InstallmentBalance {
 
 export function pledgeState(status: string, installments: InstallmentBalance[], today: string): PledgeState {
   if (status === 'cancelled') return 'cancelled';
-  if (installments.every((i) => i.outstanding_sek === 0)) return 'fulfilled';
+  if (installments.length > 0 && installments.every((i) => i.outstanding_sek === 0)) return 'fulfilled';
   if (installments.some((i) => i.outstanding_sek > 0 && i.due_on < today)) return 'overdue';
   return 'on_plan';
 }

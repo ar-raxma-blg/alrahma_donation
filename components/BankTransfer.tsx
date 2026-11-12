@@ -4,7 +4,7 @@ import CopyButton from './CopyButton';
 import { CARD, QrCode } from './PaymentQR';
 
 // "Direct Bank Transfer": text details with copy buttons. Rows come from
-// /admin → Betalkonton; empty fields are already filtered out server-side.
+// /admin → Hemsida & betalsätt; empty fields are filtered out server-side.
 export default function BankTransfer({ lang, bank }: { lang: Lang; bank?: QrCode }) {
   if (!bank?.rows?.length) return null;
 
@@ -15,8 +15,8 @@ export default function BankTransfer({ lang, bank }: { lang: Lang; bank?: QrCode
         {bank.rows.map(([key, value]) => (
           <div key={key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-black/25 px-4 py-3.5">
             <dt className="text-base font-medium text-mosque-cream/80">{t(lang, key)}</dt>
-            <dd className="flex min-w-0 items-center gap-1.5">
-              <span className="break-all font-mono text-xl font-extrabold tracking-wide text-white sm:text-2xl" dir="ltr">{value}</span>
+            <dd className="flex min-w-0 max-w-full items-center gap-1.5">
+              <span className="min-w-0 break-words [overflow-wrap:anywhere] font-mono text-base font-extrabold text-white sm:text-lg" dir="ltr">{value}</span>
               <CopyButton value={value} label={t(lang, 'copy')} doneLabel={t(lang, 'copied')} />
             </dd>
           </div>

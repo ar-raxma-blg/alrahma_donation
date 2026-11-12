@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { epcPayload, paypalUrl, qrSvg, swishUrl } from '@/lib/qr';
+import { paypalUrl, qrSvg, swishUrl } from '@/lib/qr';
 
 import { PublicDonation } from '@/lib/types';
 import TrackerClient from './TrackerClient';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { publicRaised } from '@/lib/homepage';
 
 export const revalidate = 0; 
 
@@ -30,7 +31,8 @@ function demoDonations(): PublicDonation[] {
   }));
 }
 
-export default async function TrackerPage({ searchParams }: { searchParams: { demo?: string } }) {
+export default async function TrackerPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ demo?: string }> }) {
+  const searchParams = await searchParamsPromise;
   const demo = process.env.NODE_ENV !== 'production' && searchParams.demo === '1';
   // Public reads use the publishable key and the public_donations view; only
   // payment settings need the server key.
@@ -54,7 +56,6 @@ export default async function TrackerPage({ searchParams }: { searchParams: { de
   const paypal = settings?.paypal_link ? paypalUrl(settings.paypal_link) : null;
   const cardLink = settings?.card_link?.trim();
   const card = cardLink ? (/^https?:\/\//i.test(cardLink) ? cardLink : `https://${cardLink}`) : null;
-  const epc = settings?.iban ? epcPayload(settings.iban, settings.account_holder ?? '', settings.bic ?? '') : null;
   const bankRows = (
     [
       ['bankgiro', settings?.bankgiro],
@@ -67,27 +68,25 @@ export default async function TrackerPage({ searchParams }: { searchParams: { de
     ] as [string, string | undefined][]
   ).filter(([, v]) => v && v.trim()) as [string, string][];
   const qrCodes = {
-    swish: swish ? { kind: 'swish' as const, svg: await qrSvg(swish), imageUrl: settings?.swish_qr_url || undefined, detail: settings!.swish_number } : undefined,
-    // Placeholder (toggle in /admin): until a PayPal link is set, reuse the Swish QR in the PayPal slot.
-    // An uploaded PayPal QR image wins over everything else.
+    swish: swish || settings?.swish_qr_url ? { kind: 'swish' as const, svg: swish ? await qrSvg(swish) : undefined, imageUrl: settings?.swish_qr_url || undefined, detail: settings?.swish_number || undefined } : undefined,
+    // PayPal only uses its own configured link/image; never reuse Swish here.
     paypal: settings?.paypal_qr_url
       ? { kind: 'paypal' as const, imageUrl: settings.paypal_qr_url, detail: settings.paypal_link?.replace(/^https?:\/\//i, '') || undefined }
       : paypal
       ? { kind: 'paypal' as const, svg: await qrSvg(paypal), detail: settings!.paypal_link.replace(/^https?:\/\//i, '') }
-      : swish && settings?.paypal_placeholder !== false
-        ? { kind: 'paypal' as const, svg: await qrSvg(swish), imageUrl: settings?.swish_qr_url || undefined, detail: settings!.swish_number }
-        : undefined,
+      : undefined,
     card: card ? { kind: 'card' as const, svg: await qrSvg(card), detail: settings!.card_link.replace(/^https?:\/\//i, '') } : undefined,
     bank: bankRows.length
-      ? { kind: 'bank' as const, svg: epc ? await qrSvg(epc) : undefined, rows: bankRows }
+      ? { kind: 'bank' as const, rows: bankRows }
       : undefined
   };
 
   return (
     <TrackerClient
       qrCodes={qrCodes}
-      goal={totals?.goal_sek ?? 15000000}
-      raised={demo ? 3250000 : totals?.raised_sek ?? 0}
+      goal={Number(totals?.goal_sek ?? 0)}
+      raised={demo ? 3250000 : publicRaised(totals)}
+      refreshProgress={!demo}
       initialDonations={demo ? demoDonations() : donations ?? []}
       subtitle={null}
       isLive={settings?.is_live ?? true}

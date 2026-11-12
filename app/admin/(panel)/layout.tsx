@@ -20,7 +20,6 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     {
       title: 'Insamling',
       items: [
-        { href: '/admin/kampanjer', label: 'Kampanjer', icon: 'campaigns' },
         { href: '/admin/transaktioner', label: 'Transaktioner', icon: 'transactions', badge: todo.awaitingApproval + todo.stuckPayments },
         { href: '/admin/loften', label: 'Löften', icon: 'pledges', badge: todo.overdueInstallments }
       ]
@@ -28,7 +27,6 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     {
       title: 'Givare',
       items: [
-        { href: '/admin/givare', label: 'Givare', icon: 'donors' },
         { href: '/admin/utskick', label: 'Utskick', icon: 'messages' }
       ]
     },
@@ -36,8 +34,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     {
       title: 'Inställningar',
       items: [
-        { href: '/admin/betalsatt', label: 'Betalsätt', icon: 'payments' },
-        { href: '/admin/anvandare', label: 'Användare & roller', icon: 'users' },
+        { href: '/admin/betalsatt', label: 'Hemsida & betalsätt', icon: 'payments' },
         { href: '/admin/logg', label: 'Logg', icon: 'log' }
       ]
     }
@@ -45,8 +42,9 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-mosque-cream text-mosque-ink lg:flex-row">
+      <a href="#admin-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:font-bold">Hoppa till innehållet</a>
       <AdminNav groups={groups} userName={user.name} />
-      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">{children}</main>
+      <main id="admin-content" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10"><div className="mx-auto w-full max-w-5xl">{children}</div></main>
     </div>
   );
 }

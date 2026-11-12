@@ -1,150 +1,55 @@
 import Link from 'next/link';
-import { Card, GoalBars, PageHead, Pill } from '@/components/admin/ui';
-import { daysBetween, fmtDate } from '@/lib/admin/dates';
+import { Card, PageHead, Pill } from '@/components/admin/ui';
+import { adminPanelLayout, adminPanelPrimaryButton, adminPanelSecondaryButton } from '@/components/admin/PanelHeader';
+import OverviewFundraising from '@/components/admin/OverviewFundraising';
+import { loadOverviewDashboard } from '@/lib/admin/overview';
+import { getAdminUser } from '@/lib/auth';
+import { fmtDate } from '@/lib/admin/dates';
 import { METHOD_SV, TX_STATUS_SV } from '@/lib/admin/labels';
-import { getOverview } from '@/lib/admin/queries';
 import { fmtSEK } from '@/lib/format';
 
 export default async function Overview() {
-  let o;
-  try {
-    o = await getOverview();
-  } catch (error) {
-    if (!(error instanceof Error) || !error.message.includes("public.campaigns")) throw error;
-    return <div>
-      <PageHead title="Databasen behöver uppdateras" sub="Den nya adminpanelen väntar på kampanjtabellerna i Al-Rahmas Supabase-projekt." />
-      <Card className="space-y-3 text-sm">
-        <p>SQL-migrationerna från 13–14 oktober behöver köras i Al-Rahmas Supabase-projekt innan översikten kan visas.</p>
-        <p>SMS-utskick till givare som valt SMS kan användas via den befintliga givarlistan under tiden.</p>
-        <div className="flex flex-wrap gap-4 font-bold text-mosque-emerald">
-          <Link href="/admin/utskick" className="underline">Öppna Utskick</Link>
-          <Link href="/admin/legacy" className="underline">Öppna tidigare admin</Link>
-        </div>
-      </Card>
-    </div>;
-  }
-  const { kpi, todo } = o;
-
-  const tasks = [
-    todo.awaitingApproval && { n: todo.awaitingApproval, text: 'manuella transaktioner väntar på godkännande', href: '/admin/transaktioner?status=awaiting_approval' },
-    todo.overdueInstallments && { n: todo.overdueInstallments, text: 'förfallna delbetalningar på löften', href: '/admin/loften?status=overdue' },
-    todo.stuckPayments && { n: todo.stuckPayments, text: 'onlinebetalningar har väntat i över 1 timme', href: '/admin/transaktioner?status=pending_provider' }
-  ].filter(Boolean) as { n: number; text: string; href: string }[];
-
-  const tiles = [
-    { label: 'Idag', value: fmtSEK(kpi.today), href: '/admin/transaktioner?period=today' },
-    { label: 'Senaste 7 dagarna', value: fmtSEK(kpi.d7), href: '/admin/transaktioner?period=7' },
-    { label: 'Senaste 30 dagarna', value: fmtSEK(kpi.d30), href: '/admin/transaktioner?period=30' },
-    { label: 'Totalt insamlat', value: fmtSEK(kpi.total), href: '/admin/transaktioner?status=confirmed' },
-    { label: 'Antal gåvor', value: String(kpi.gifts), href: '/admin/transaktioner?status=confirmed' },
-    { label: 'Snittgåva', value: fmtSEK(kpi.average), href: '/admin/transaktioner?status=confirmed' }
+  const owner = !!await getAdminUser('owner');
+  const d = await loadOverviewDashboard(owner);
+  const reportHref = `/admin/rapporter?from=${d.monthStart}&to=${d.today}`;
+  const shortcuts = [
+    { title: 'Hemsidan', description: 'Se insamlingen som besökarna ser den.', href: '/', action: 'Visa hemsidan', external: true },
+    ...(owner ? [
+      { title: 'Betalsätt & QR-koder', description: 'Ändra Swish, PayPal och bankuppgifter.', href: '/admin/betalsatt#betaluppgifter', action: 'Ändra betaluppgifter' },
+      { title: 'Utskick', description: 'Öppna anslutna kanaler och följ upp meddelanden.', href: '/admin/utskick', action: 'Öppna Utskick' }
+    ] : []),
+    { title: 'Rapporter & avstämning', description: 'Följ betalningar, jämför banken och exportera Excel.', href: reportHref, action: 'Öppna rapporter' }
   ];
-  const methods = Object.entries(kpi.byMethod).sort((a, b) => b[1] - a[1]);
-  const methodTotal = methods.reduce((s, [, v]) => s + v, 0);
+  return <section className={adminPanelLayout}>
+    <PageHead title="Översikt" category="Administration" sub="Insamlingen, viktiga uppgifter och genvägar till det du vill ändra." />
 
-  return (
-    <div>
-      <PageHead title="Översikt" sub="Hur det går just nu, och vad som behöver göras." />
-
-      {tasks.length > 0 && (
-        <Card className="mb-6 border-amber-300 bg-amber-50">
-          <h2 className="mb-2 text-base font-extrabold text-amber-900">Att göra</h2>
-          <ul className="flex flex-col gap-1.5">
-            {tasks.map((t) => (
-              <li key={t.href}>
-                <Link href={t.href} className="flex items-center gap-3 rounded-lg px-1 py-1 text-sm font-semibold text-amber-900 hover:underline">
-                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-amber-400 px-2 text-xs font-bold text-amber-950">{t.n}</span>
-                  {t.text}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      <h2 className="mb-3 text-lg font-extrabold">Aktiva kampanjer</h2>
-      {o.active.length === 0 ? (
-        <Card className="mb-6 text-sm text-mosque-ink/60">
-          Ingen kampanj är publicerad. <Link href="/admin/kampanjer" className="font-bold text-mosque-emerald underline">Gå till Kampanjer</Link> för att skapa eller publicera en.
-        </Card>
-      ) : (
-        <div className="mb-6 grid gap-4 lg:grid-cols-2">
-          {o.active.map(({ campaign: c, stats }) => {
-            const left = c.ends_on ? daysBetween(o.today, c.ends_on) : null;
-            return (
-              <Card key={c.id}>
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-                  <Link href={`/admin/kampanjer/${c.id}`} className="text-lg font-extrabold hover:underline">{c.title}</Link>
-                  <span className="text-sm text-mosque-ink/60 tabular-nums">Mål {fmtSEK(c.goal_sek)}</span>
-                </div>
-                <GoalBars confirmed={stats.confirmed_sek} pledged={stats.pledged_outstanding_sek} goal={c.goal_sek} />
-                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-mosque-ink/70">
-                  <span><b className="text-mosque-ink">{stats.donors}</b> givare</span>
-                  <span>{left === null ? 'Inget slutdatum' : left >= 0 ? <><b className="text-mosque-ink">{left}</b> dagar kvar</> : 'Slutdatum passerat'}</span>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-        {tiles.map((t) => (
-          <Link key={t.label} href={t.href} className="min-w-0 rounded-2xl border border-mosque-ink/10 bg-white p-4 hover:border-mosque-emerald">
-            <div className="text-xs font-bold uppercase tracking-wide text-mosque-ink/50">{t.label}</div>
-            <div className="mt-2 break-words text-xl font-extrabold tabular-nums text-mosque-emerald">{t.value}</div>
-          </Link>
-        ))}
+    <section aria-labelledby="homepage-heading" className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><h2 id="homepage-heading" className="text-xl font-extrabold">Hemsidans insamling</h2><p className="mt-1 text-sm text-mosque-ink/60">Samma total, mål och procent som på hemsidan. Uppdateras automatiskt.</p></div>
+        {owner && <Link href="/admin/betalsatt#insamling" className={adminPanelPrimaryButton}>Ändra total och mål</Link>}
       </div>
+      {d.homepage ? <OverviewFundraising {...d.homepage} /> : <Card><p role="alert" className="text-sm text-red-700">Kunde inte läsa hemsidans insamling. Ladda om sidan för aktuella belopp.</p></Card>}
+      <p className="text-xs leading-5 text-mosque-ink/60">Hemsidans total kan innehålla en manuell del efter bankavstämning. Registrerade betalningar nedan och i Rapporter redovisas separat. Obetalda löften ingår inte i mottagna pengar.</p>
+    </section>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.4fr]">
-        <Card>
-          <h2 className="mb-1 text-base font-extrabold">Betalsätt</h2>
-          <p className="mb-3 text-xs text-mosque-ink/50">Senaste 30 dagarna</p>
-          {methods.length === 0 ? (
-            <p className="text-sm text-mosque-ink/50">Inga bekräftade gåvor än.</p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {methods.map(([m, v]) => (
-                <li key={m}>
-                  <Link href={`/admin/transaktioner?method=${m}&period=30`} className="block">
-                    <div className="mb-1 flex justify-between gap-2 text-sm">
-                      <span className="font-semibold">{METHOD_SV[m] ?? m}</span>
-                      <span className="tabular-nums">{fmtSEK(v)} · {Math.round((v / methodTotal) * 100)} %</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-mosque-ink/10"><div className="h-full bg-mosque-emerald" style={{ width: `${(v / methodTotal) * 100}%` }} /></div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+    <nav aria-label="Genvägar" className="grid gap-4 sm:grid-cols-2">
+      {shortcuts.map(s => <Link key={s.href} href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noreferrer' : undefined} className="group min-w-0 rounded-2xl border border-mosque-ink/10 bg-white p-5 shadow-sm transition-colors hover:border-mosque-emerald focus-visible:outline focus-visible:outline-2 focus-visible:outline-mosque-emerald"><h2 className="text-lg font-extrabold">{s.title}</h2><p className="mt-2 text-sm leading-6 text-mosque-ink/60">{s.description}</p><span className="mt-4 inline-block text-sm font-bold text-mosque-emerald group-hover:underline">{s.action} →</span></Link>)}
+    </nav>
 
-        <Card>
-          <h2 className="mb-3 text-base font-extrabold">Senaste 10 transaktionerna</h2>
-          {o.recent.length === 0 ? (
-            <p className="text-sm text-mosque-ink/50">Inga transaktioner än. De dyker upp här när den första gåvan kommer in.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px] text-sm">
-                <tbody>
-                  {o.recent.map((t) => (
-                    <tr key={t.id} className="border-t border-mosque-ink/10 first:border-0">
-                      <td className="py-2 pr-3 text-mosque-ink/60">{fmtDate(t.received_on)}</td>
-                      <td className="py-2 pr-3 font-bold tabular-nums">{fmtSEK(t.amount_sek)}</td>
-                      <td className="py-2 pr-3">{t.display_name ?? 'Anonym'}<div className="text-xs text-mosque-ink/50">{t.campaign?.title}</div></td>
-                      <td className="py-2 pr-3">{METHOD_SV[t.method]}</td>
-                      <td className="py-2">
-                        <Pill tone={t.status === 'confirmed' ? 'green' : t.status === 'rejected' || t.status === 'refunded' ? 'grey' : 'amber'}>{TX_STATUS_SV[t.status]}</Pill>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
-  );
+    <section aria-labelledby="followup-heading" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="followup-heading" className="text-xl font-extrabold">Betalningar och löften</h2><Link href="/admin/loften/ny" className={adminPanelSecondaryButton}>Nytt löfte</Link></div>
+      {!d.operations ? <Card><p role="alert" className="text-sm text-red-700">Kunde inte läsa betalningar och löften. Ladda om sidan för aktuellt underlag.</p></Card> : <>
+        <div className="grid gap-3 sm:grid-cols-2">{[
+          { label: 'Bekräftat denna månad', value: fmtSEK(d.operations.monthlyPaid), href: reportHref },
+          { label: 'Kvar på aktiva löften', value: fmtSEK(d.operations.outstanding), href: '/admin/loften' },
+          { label: 'Betalningar att godkänna', value: String(d.operations.awaiting), href: '/admin/transaktioner?status=awaiting_approval' },
+          { label: 'Förfallna delbetalningar', value: String(d.operations.overdue), href: '/admin/loften?status=overdue' }
+        ].map(s => <Link key={s.label} href={s.href} className="min-w-0 rounded-2xl border border-mosque-ink/10 bg-white p-5 shadow-sm hover:border-mosque-emerald"><p className="text-sm font-semibold text-mosque-ink/60">{s.label}</p><p className="mt-2 break-words text-3xl font-extrabold tabular-nums text-mosque-emerald">{s.value}</p></Link>)}</div>
+        {(d.operations.awaiting > 0 || d.operations.overdue > 0) && <Card className="border-amber-200 bg-amber-50"><h3 className="font-extrabold text-amber-950">Behöver följas upp</h3><div className="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-amber-900">{d.operations.awaiting > 0 && <Link href="/admin/transaktioner?status=awaiting_approval" className="underline">Granska {d.operations.awaiting} väntande betalningar</Link>}{d.operations.overdue > 0 && <Link href="/admin/loften?status=overdue" className="underline">Öppna försenade löften</Link>}</div></Card>}
+        <Card><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-extrabold">Senaste betalningarna</h3><Link href="/admin/transaktioner" className="text-sm font-bold text-mosque-emerald underline">Alla transaktioner</Link></div>{d.operations.recent.length === 0 ? <p className="text-sm text-mosque-ink/60">Inga registrerade betalningar än.</p> : <ul className="divide-y divide-mosque-ink/10">{d.operations.recent.map(t => <li key={t.id}><Link href={`/admin/transaktioner/${t.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm hover:text-mosque-emerald"><span><strong>{fmtSEK(t.amount_sek)}</strong><span className="ml-3 text-mosque-ink/60">{fmtDate(t.received_on)} · {METHOD_SV[t.method]}</span></span><Pill tone={t.status === 'confirmed' ? 'green' : t.status === 'awaiting_approval' ? 'amber' : 'grey'}>{TX_STATUS_SV[t.status]}</Pill></Link></li>)}</ul>}</Card>
+      </>}
+    </section>
+
+    {owner && <Card><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-extrabold">Utskick att följa upp</h2><p className="mt-1 text-xs text-mosque-ink/60">Senaste 7 dagarna · högst 3 senaste utskick med fel</p></div><Link href="/admin/utskick" className={adminPanelSecondaryButton}>Öppna Utskick</Link></div>{d.broadcasts === null ? <p role="alert" className="mt-4 text-sm text-red-700">Kunde inte läsa utskickshistoriken. Öppna Utskick för att kontrollera den.</p> : d.broadcasts.length === 0 ? <p className="mt-4 text-sm text-mosque-ink/60">Inga registrerade misslyckade eller delvis misslyckade utskick under perioden.</p> : <ul className="mt-4 divide-y divide-mosque-ink/10">{d.broadcasts.map(b => <li key={b.id}><Link href="/admin/utskick" className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><span className="font-bold">{b.channel.toUpperCase()} · {b.status === 'partial' ? 'Delvis misslyckat' : 'Misslyckat'}</span><span>{b.failed_count} misslyckade eller okända</span><time className="text-xs text-mosque-ink/60" dateTime={b.created_at}>{new Date(b.created_at).toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' })}</time></Link></li>)}</ul>}</Card>}
+  </section>;
 }

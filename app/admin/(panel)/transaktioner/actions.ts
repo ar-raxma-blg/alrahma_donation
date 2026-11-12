@@ -1,5 +1,7 @@
 'use server';
 
+import { mainCollectionId } from '@/lib/admin/main-collection';
+import { stockholmToday } from '@/lib/admin/dates';
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -10,7 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 type Fail = { ok: false; error: string };
 export type Result<T = object> = ({ ok: true } & T) | Fail;
 
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ange ett giltigt datum.');
+const date = z.iso.date('Ange ett giltigt datum.');
 const firstName = z
   .string()
   .trim()
@@ -19,7 +21,7 @@ const firstName = z
   .optional();
 
 const manualSchema = z.object({
-  campaign_id: z.string().uuid('Välj en kampanj.'),
+  campaign_id: z.string().uuid().optional(),
   amount_sek: z.coerce.number({ error: 'Ange beloppet i hela kronor.' }).int('Ange beloppet i hela kronor.').positive('Beloppet måste vara större än 0 kr.').max(100_000_000),
   received_on: date,
   method: z.enum(['cash', 'bank_transfer'], { error: 'Välj kontant eller banköverföring.' }),
@@ -41,7 +43,7 @@ export async function createManualTransaction(fd: FormData): Promise<Result<{ id
   if (!user) return { ok: false, error: 'Du är inte inloggad som admin.' };
 
   const parsed = manualSchema.safeParse({
-    campaign_id: fd.get('campaign_id'),
+    campaign_id: blank(fd.get('campaign_id')),
     amount_sek: fd.get('amount_sek'),
     received_on: fd.get('received_on'),
     method: fd.get('method'),
@@ -55,6 +57,8 @@ export async function createManualTransaction(fd: FormData): Promise<Result<{ id
   const v = parsed.data;
   const db = supabaseAdmin();
 
+  if (v.received_on > stockholmToday()) return { ok: false, error: 'Betalningsdatum får inte ligga i framtiden.' };
+  let campaign_id = v.campaign_id;
   let donor_id = v.donor_id ?? null;
   if (v.installment_id) {
     const { data: inst } = await db
@@ -65,14 +69,22 @@ export async function createManualTransaction(fd: FormData): Promise<Result<{ id
     const pledge = inst?.pledge as unknown as { campaign_id: string; donor_id: string; status: string } | null;
     if (!pledge) return { ok: false, error: 'Delbetalningen finns inte.' };
     if (pledge.status !== 'active') return { ok: false, error: 'Löftet är avbrutet.' };
-    if (pledge.campaign_id !== v.campaign_id) return { ok: false, error: 'Löftet tillhör en annan kampanj än gåvan.' };
+    if (campaign_id && pledge.campaign_id !== campaign_id) return { ok: false, error: 'Löftet tillhör en annan kampanj än gåvan.' };
     donor_id = pledge.donor_id;
+    campaign_id = pledge.campaign_id;
+    const { data: balance, error: balanceError } = await db.from('installment_balances').select('outstanding_sek').eq('installment_id', v.installment_id).single();
+    if (balanceError || !balance) return { ok: false, error: 'Kunde inte läsa delbetalningens saldo.' };
+    if (v.amount_sek > balance.outstanding_sek) return { ok: false, error: 'Beloppet överstiger vad som återstår på delbetalningen.' };
+  }
+
+  if (!campaign_id) {
+    try { campaign_id = await mainCollectionId(); } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Kunde inte förbereda insamlingen.' }; }
   }
 
   const { data, error } = await db
     .from('transactions')
     .insert({
-      campaign_id: v.campaign_id,
+      campaign_id,
       amount_sek: v.amount_sek,
       received_on: v.received_on,
       method: v.method,
@@ -106,12 +118,17 @@ export async function decideTransaction(id: string, decision: 'approve' | 'rejec
   if (!user) return { ok: false, error: 'Du är inte inloggad som admin.' };
 
   const db = supabaseAdmin();
-  const { data: tx } = await db.from('transactions').select('id, status, registered_by, amount_sek').eq('id', id).single();
+  const { data: tx } = await db.from('transactions').select('id, status, registered_by, amount_sek, installment_id').eq('id', id).single();
   if (!tx) return { ok: false, error: 'Transaktionen finns inte.' };
   if (tx.status !== 'awaiting_approval') return { ok: false, error: 'Transaktionen väntar inte längre på godkännande.' };
 
   if (decision === 'approve') {
     if (tx.registered_by === user.id) return { ok: false, error: 'Du registrerade den här transaktionen. En annan admin måste godkänna den.' };
+    if (tx.installment_id) {
+      const { data: balance, error: balanceError } = await db.from('installment_balances').select('outstanding_sek, pledge_status').eq('installment_id', tx.installment_id).single();
+      if (balanceError || !balance) return { ok: false, error: 'Kunde inte läsa delbetalningens saldo.' };
+      if (balance.pledge_status !== 'active' || tx.amount_sek > balance.outstanding_sek) return { ok: false, error: 'Löftet är avbrutet eller betalningen överstiger aktuellt återstående belopp.' };
+    }
     const { error } = await db
       .from('transactions')
       .update({ status: 'confirmed', approved_by: user.id, approved_at: new Date().toISOString() })

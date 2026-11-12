@@ -6,7 +6,8 @@ import { requireAdmin } from '@/lib/auth';
 // amounts stay in campaign totals (display_name is already snapshotted on
 // each donation row), but personal fields are scrubbed here. A scheduled
 // job can hard-delete rows past your retention window.
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const guard = await requireAdmin(req);
   if (guard) return guard;
 
