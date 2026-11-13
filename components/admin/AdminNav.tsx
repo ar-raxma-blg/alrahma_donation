@@ -52,14 +52,14 @@ export default function AdminNav({ groups, userName }: { groups: NavGroup[]; use
 
   return (
     <>
-      <div className="flex items-center justify-between bg-mosque-deep px-4 py-3 text-mosque-cream lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-mosque-deep px-4 py-3 text-mosque-cream lg:hidden">
         <span className="font-extrabold">Al-Rahma Admin</span>
-        <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold">
+        <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls="admin-navigation" className="rounded-xl border border-white/30 px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/10">
           {open ? 'Stäng' : 'Meny'}
         </button>
       </div>
 
-      <aside className={`${open ? 'flex' : 'hidden'} w-full flex-shrink-0 flex-col gap-1 bg-mosque-deep p-4 text-mosque-cream lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:overflow-y-auto`}>
+      <aside id="admin-navigation" className={`${open ? 'flex' : 'hidden'} max-h-[calc(100dvh-4.5rem)] w-full flex-shrink-0 flex-col gap-1 overflow-y-auto lg:max-h-none bg-mosque-deep p-4 text-mosque-cream lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:overflow-y-auto`}>
         <div className="mb-3 hidden items-center gap-2.5 border-b border-white/10 px-2 pb-4 lg:flex">
           <img src="/logo.png" alt="" className="h-10 w-10" />
           <div>
@@ -78,7 +78,7 @@ export default function AdminNav({ groups, userName }: { groups: NavGroup[]; use
                   href={item.href}
                   onClick={() => setOpen(false)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold ${
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-mosque-gold ${
                     isActive(item.href) ? 'bg-mosque-gold/90 text-mosque-deep' : 'text-mosque-cream/85 hover:bg-white/10'
                   }`}
                 >
@@ -95,22 +95,14 @@ export default function AdminNav({ groups, userName }: { groups: NavGroup[]; use
           ))}
         </nav>
 
-        <Link
-          href="/admin/event"
-          onClick={() => setOpen(false)}
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-mosque-emerald px-3 py-3 text-sm font-bold text-white hover:brightness-110"
-        >
-          <Icon name="event" /> Starta eventläge
-        </Link>
-
         <div className="mt-auto border-t border-white/10 px-2 pt-4 text-sm">
-          <div className="font-semibold">{userName}</div>
-          <div className="mt-2 flex gap-2">
-            <button onClick={logout} className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold hover:bg-white/10">
+          <div className="break-words font-semibold">{userName}</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button onClick={logout} className="rounded-xl border border-white/30 px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/10">
               Logga ut
             </button>
-            <Link href="/admin/legacy" className="rounded-lg px-3 py-1.5 text-xs text-mosque-cream/60 hover:bg-white/10">
-              Gamla admin
+            <Link href="/" target="_blank" rel="noreferrer" className="rounded-xl px-3 py-2 text-xs font-semibold text-mosque-mint transition-colors hover:bg-white/10">
+              Visa hemsidan
             </Link>
           </div>
         </div>

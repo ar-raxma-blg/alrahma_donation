@@ -81,6 +81,7 @@ export interface CampaignSettings {
 }
 
 export interface BroadcastLogEntry {
+  diagnostics?: import('./broadcast-diagnostics').BroadcastDiagnostics | null;
   id: string;
   channel: 'sms' | 'email' | 'whatsapp';
   recipient_count: number;

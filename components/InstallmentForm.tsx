@@ -16,7 +16,7 @@ export default function InstallmentForm({ plan, donations, onSaved }: { plan: Pa
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [notice, setNotice] = useState('');
-  const requestId = useRef<string>();
+  const requestId = useRef<string | undefined>(undefined);
   async function save(event: React.FormEvent) {
     event.preventDefault(); if (busy) return;
     requestId.current ||= crypto.randomUUID();

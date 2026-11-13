@@ -20,11 +20,3 @@ export function paypalUrl(link: string): string | null {
 export function qrSvg(text: string): Promise<string> {
   return QRCode.toString(text, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
 }
-
-// EPC "GiroCode" payload (SEPA credit transfer). Scannable by most European
-// banking apps; needs an IBAN and a beneficiary name. BIC is optional in v002.
-export function epcPayload(iban: string, name: string, bic = ''): string | null {
-  const cleanIban = iban.replace(/\s/g, '').toUpperCase();
-  if (!cleanIban || !name.trim()) return null;
-  return ['BCD', '002', '1', 'SCT', bic.replace(/\s/g, '').toUpperCase(), name.trim().slice(0, 70), cleanIban, '', '', '', ''].join('\n');
-}

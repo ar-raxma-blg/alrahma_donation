@@ -5,7 +5,8 @@ import { Campaign } from '@/lib/admin/types';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import CampaignForm from '../CampaignForm';
 
-export default async function EditCampaign({ params }: { params: { id: string } }) {
+export default async function EditCampaign({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   if (params.id === 'ny') {
     return (
       <div>

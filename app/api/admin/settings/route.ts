@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const guard = await requireAdmin(req);
+  const guard = await requireAdmin(req, 'owner');
   if (guard) return guard;
 
   const { swishNumber, bankgiro, iban, paypalLink, paypalPlaceholder, goalSek, plusgiro, bankName, accountHolder, accountNumber, bic, cardLink, isLive, pausedMessage, transparencyFiles } = await req.json();

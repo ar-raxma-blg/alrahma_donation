@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const guard = await requireAdmin(req);
   if (guard) return guard;
   let body;

@@ -1,29 +1,32 @@
 'use client';
 
+import { adminPanelInput, adminPanelPrimaryButton, adminPanelSecondaryButton } from '@/components/admin/PanelHeader';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { createManualTransaction } from '../actions';
 
-const input = 'w-full rounded-lg border border-mosque-ink/15 bg-white px-3 py-2.5 text-sm';
+const input = adminPanelInput;
 const label = 'mb-1.5 block text-xs font-bold text-mosque-ink/60';
 
 export default function NewTransactionForm({
-  campaigns,
   donors,
   installments,
   today,
-  me
+  me,
+  initialInstallment = ''
 }: {
-  campaigns: { id: string; title: string }[];
   donors: { id: string; full_name: string }[];
-  installments: { id: string; campaign_id: string; label: string }[];
+  installments: { id: string; pledge_id: string; donor_id: string; campaign_id: string; outstanding_sek: number; label: string }[];
   today: string;
   me: string;
+  initialInstallment?: string;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [campaign, setCampaign] = useState(campaigns[0]?.id ?? '');
+  const [donorId, setDonorId] = useState('');
+  const [installmentId, setInstallmentId] = useState(initialInstallment);
+  const selected = installments.find(i => i.id === installmentId);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,35 +35,27 @@ export default function NewTransactionForm({
     start(async () => {
       const res = await createManualTransaction(fd);
       if (!res.ok) return setError(res.error);
-      router.push('/admin/transaktioner?status=awaiting_approval');
+      router.push(selected ? `/admin/loften/${selected.pledge_id}?tab=betalningar&registered=1` : '/admin/transaktioner?status=awaiting_approval');
       router.refresh();
     });
   };
 
-  if (campaigns.length === 0) {
-    return <div className="rounded-2xl border border-mosque-ink/10 bg-white p-5 text-sm">Skapa en kampanj först under Kampanjer.</div>;
-  }
-
   return (
     <form onSubmit={submit} className="flex max-w-2xl flex-col gap-4 rounded-2xl border border-mosque-ink/10 bg-white p-5 sm:p-6">
+      <input type="hidden" name="campaign_id" value={selected?.campaign_id ?? ''} />
+      <p className="text-sm text-mosque-ink/60">{selected ? selected.label : 'Gåvan hör till huvudinsamlingen.'}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label} htmlFor="amount_sek">Belopp (kr)</label>
-          <input id="amount_sek" name="amount_sek" type="number" min={1} step={1} inputMode="numeric" required className={input} />
+          <input key={installmentId} id="amount_sek" name="amount_sek" type="number" defaultValue={selected?.outstanding_sek} max={selected?.outstanding_sek} min={1} step={1} inputMode="numeric" required className={input} />
         </div>
         <div>
           <label className={label} htmlFor="received_on">Mottagen</label>
           <input id="received_on" name="received_on" type="date" required defaultValue={today} max={today} className={input} />
         </div>
         <div>
-          <label className={label} htmlFor="campaign_id">Kampanj</label>
-          <select id="campaign_id" name="campaign_id" required className={input} value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-            {campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-          </select>
-        </div>
-        <div>
           <label className={label} htmlFor="method">Betalsätt</label>
-          <select id="method" name="method" required className={input} defaultValue="cash">
+          <select id="method" name="method" required className={input} defaultValue="bank_transfer">
             <option value="cash">Kontant</option>
             <option value="bank_transfer">Banköverföring</option>
           </select>
@@ -82,8 +77,8 @@ export default function NewTransactionForm({
           <p className="mt-1 text-xs text-mosque-ink/50">Bara förnamn. Efternamn sparas aldrig här.</p>
         </div>
         <div>
-          <label className={label} htmlFor="donor_id">Givare (valfritt)</label>
-          <select id="donor_id" name="donor_id" className={input} defaultValue="">
+          <label className={label} htmlFor="donor_id">{selected ? 'Givare kopplas från löftet' : 'Givare (valfritt)'}</label>
+          <select id="donor_id" name="donor_id" disabled={!!selected} className={input} value={selected?.donor_id ?? donorId} onChange={e => setDonorId(e.target.value)}>
             <option value="">Ingen kopplad givare</option>
             {donors.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
           </select>
@@ -92,16 +87,16 @@ export default function NewTransactionForm({
 
       <div>
         <label className={label} htmlFor="installment_id">Gäller delbetalning på ett löfte (valfritt)</label>
-        <select id="installment_id" name="installment_id" className={input} defaultValue="">
+        <select id="installment_id" name="installment_id" className={input} value={installmentId} onChange={e => setInstallmentId(e.target.value)}>
           <option value="">Nej, vanlig gåva</option>
-          {installments.filter((i) => i.campaign_id === campaign).map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
+          {installments.map((i) => <option key={i.id} value={i.id}>{i.label}</option>)}
         </select>
       </div>
 
       {error && <div role="alert" className="rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700">{error}</div>}
-      <div className="flex gap-3">
-        <button disabled={pending} className="rounded-lg bg-mosque-emerald px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{pending ? 'Sparar…' : 'Skicka för godkännande'}</button>
-        <button type="button" onClick={() => router.push('/admin/transaktioner')} className="rounded-lg bg-mosque-ink/10 px-5 py-2.5 text-sm font-bold">Avbryt</button>
+      <div className="flex flex-wrap gap-3">
+        <button disabled={pending} className={adminPanelPrimaryButton}>{pending ? 'Sparar…' : 'Skicka för godkännande'}</button>
+        <button type="button" onClick={() => router.push('/admin/transaktioner')} className={adminPanelSecondaryButton}>Avbryt</button>
       </div>
     </form>
   );

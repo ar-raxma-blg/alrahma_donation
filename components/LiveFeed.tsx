@@ -51,7 +51,7 @@ export default function LiveFeed({ lang, initial }: { lang: Lang; initial: Publi
         {donations.map((d) => (
           <div
             key={d.id}
-            className="flex animate-slideIn items-center gap-3.5 rounded-2xl border border-white/[0.07] bg-black/20 p-3.5"
+            className="flex flex-wrap animate-slideIn items-center gap-3.5 rounded-2xl border border-white/[0.07] bg-black/20 p-3.5"
           >
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-mosque-gold/30 bg-mosque-gold/10 text-xs font-bold text-mosque-gold">
               {d.is_anonymous ? '★' : initials(d.display_name)}
@@ -60,8 +60,8 @@ export default function LiveFeed({ lang, initial }: { lang: Lang; initial: Publi
               <div className="truncate text-sm font-semibold">{d.is_anonymous ? t(lang, 'anonymousSupporter') : d.display_name}</div>
               {d.message && <div className="truncate text-[13px] italic text-mosque-cream/55">“{d.message}”</div>}
             </div>
-            <div className="flex-shrink-0 text-end">
-              <div className="text-xl font-bold text-mosque-gold" dir="ltr">{fmtSEK(d.amount_sek)}</div>
+            <div className="ml-auto max-w-full text-end">
+              <div className="break-words text-lg font-bold text-mosque-gold sm:text-xl" dir="ltr">{fmtSEK(d.amount_sek)}</div>
               <div className="mt-0.5 text-[11px] text-mosque-cream/50">
                 {timeAgo(d.created_at)}
               </div>

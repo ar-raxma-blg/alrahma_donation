@@ -2,9 +2,38 @@
 
 Deploy the current `feature/abdiaziz-development` branch (or merge it into the branch that your hosting deploys). The site is https://donera.alrahmaborlange.se/.
 
+**Current database (4 November 2026):** Use Supabase project `pqtetpitwmmzsmiflyjb`. Its empty database received `supabase/setup.sql` through the SQL Editor. Verification found 20 public tables, RLS on all 20, and the `admins.role` column. Two Auth users were created and assigned Owner; it has zero donors. Local `.env.local` points to this project with its publishable and server secret keys; hosting variables still need the same project values. The prior project and its records were not copied. Do not rerun `setup.sql` here.
+
 ## 1. Database status
 
-The **Al-Rahma** Supabase project received these migrations through the SQL Editor on 18 October 2026, in filename order:
+**Homepage controls, 12 November 2026:** Applied
+`202611120001_homepage_settings.sql` to `pqtetpitwmmzsmiflyjb` through the SQL
+Editor in a transaction. Verified `opening_raised_sek` and
+`save_homepage_settings(...)` exist. Existing totals and payment details were
+not changed. The Owner editor (`/admin/betalsatt`), public progress refresh,
+and removal of the PayPal/Swish placeholder require deploying the updated
+app code. The editor's test amounts were previewed locally and discarded.
+Do not rerun `setup.sql` on this database.
+
+**QR image publishing, 12 November 2026:** Applied
+`202611120002_homepage_qr_images.sql` to the same project. Verified the
+capability function returns true, public/anon execution is denied, and the
+existing displayed raised amount (0) and goal (15,000,000) remain unchanged.
+The local editor now enables Swish/PayPal uploads. No live payment recipient,
+QR image or financial amount was changed during testing.
+
+**Isolated browser verification:** Built the production app against the
+loopback PostgreSQL/Auth/Storage fixture. Verified Owner login, both file
+uploads, previews, staging without publication, reviewed save, persisted
+images after reload, all payment fields, 25,000 / 100,000 = 25%, and an
+automatic refresh to 40,000 / 200,000 = 20% without reloading. Removed both
+custom images and confirmed generated-code fallback. A disguised non-image
+PNG was rejected. The served uploaded Swish PNG was independently decoded
+as `C1235310222;;;6`. No test payments or messages were sent. Test data never
+reached the live database. The full test suite and isolated production build
+passed; merge/deployment of app code has not been performed.
+
+The **previous** Supabase project received these migrations through the SQL Editor on 18 October 2026, in filename order:
 
 - `supabase/migrations/202610130001_payment_qr.sql`
 - `supabase/migrations/202610130002_whatsapp_delivery.sql`
@@ -16,11 +45,11 @@ The **Al-Rahma** Supabase project received these migrations through the SQL Edit
 - `supabase/migrations/202610140002_admin_phase1.sql`
 - `supabase/migrations/202610140003_admin_phase2.sql`
 
-The API now resolves `campaigns`, `campaign_stats`, `transactions`, `pledges`, `whatsapp_delivery_events` and `notification_controls_log`; the local admin overview loads. **Do not rerun these files or `setup.sql` on this project.** The SQL Editor does not register these runs in Supabase CLI migration history. `setup.sql` is for a fresh installation only. The third migration reset WhatsApp template approval to draft; Meta approval still needs to be completed.
+The new project has the same schema through `setup.sql`. The SQL Editor does not register this run in Supabase CLI migration history. Meta template approval still needs to be completed.
 
 ## 2. Set hosting secrets
 
-Keep secrets in the hosting environment, never Git or chat. Keep existing Supabase variables. Add:
+Keep secrets in the hosting environment, never Git or chat. Set the hosted Supabase URL, publishable key and secret key from project `pqtetpitwmmzsmiflyjb`. Add:
 
 | Variable | Value |
 | --- | --- |
@@ -84,10 +113,30 @@ Admins can pause automatic thank-you/reminder processing in WhatsApp-aviseringar
 
 Thank-you messages are queued once per confirmed donation record and processed by the scheduler. Campaign pause and opt-out block sending. Delivery callbacks store no inbound message bodies or recipient phone numbers; donor replies are not an admin inbox. The messages direct donors to the mosque's website for help and opting out, so ensure that contact channel is monitored and preferences are updated promptly.
 
-The nine migrations listed in section 1 have been applied. Hosting deployment and production environment variables still need to be completed by the hosting owner.
+The new project received the full setup schema. Hosting deployment and production environment variables still need to be completed by the hosting owner.
 
 ## 7. Manual SMS broadcasts with 46elks
 
 Set `ELKS_API_USERNAME`, `ELKS_API_PASSWORD`, and `ELKS_FROM` privately in the hosted app, then deploy this branch. Locally, the credentials were verified with one SMS to the developer's own number; no donor group was sent. The `AlRahma` text sender cannot receive replies.
 
-Admins open **Utskick** in the sidebar, choose SMS, write a donation update or reminder, select opted-in donors, review the exact text and unique recipient count, then confirm. The review fetches a no-send 46elks dry run for each unique number and shows the total estimated cost in the account currency and the number of SMS parts. Confirmation stays disabled if 46elks cannot estimate the cost. Mass SMS only permits normalized Swedish numbers (`+46`); foreign numbers are excluded in the admin and checked again by the API before sending. The app checks consent again, limits a batch to 50 donors, deduplicates phone numbers, and records provider acceptance in the history. Acceptance does not prove delivery, and the final cost can differ from the estimate. Check the 46elks balance before a larger send. If a request times out or shows **Pågår**, check 46elks and the history before starting a new batch.
+Owners open **Utskick** in the sidebar, choose SMS, write a donation update or reminder, select opted-in donors, review the exact text and unique recipient count, then confirm. The review fetches a no-send 46elks dry run for each unique number and shows the total estimated cost in the account currency and the number of SMS parts. Confirmation stays disabled if 46elks cannot estimate the cost. Mass SMS only permits normalized Swedish numbers (`+46`); foreign numbers are excluded in the admin and checked again by the API before sending. The app checks consent again, limits a batch to 50 donors, deduplicates phone numbers, and records provider acceptance in the history. Acceptance does not prove delivery, and the final cost can differ from the estimate. Check the 46elks balance before a larger send. If a request times out or shows **Pågår**, check 46elks and the history before starting a new batch.
+
+## 8. Owner access for Utskick
+
+The fresh setup includes `admins.role`; `202611010001_broadcast_owner.sql` is only for an older database. New admins default to `admin`; nobody becomes an Owner automatically. On 4 November 2026, `abdi000810@gmail.com` and `qaskaxaji143@gmail.com` were verified as confirmed Auth users and assigned Owner in `public.admins`. A read-only SQL check is:
+
+```sql
+select u.email, a.user_id, a.full_name, a.role
+from public.admins a join auth.users u on u.id = a.user_id
+order by u.email;
+```
+
+The database returned exactly two Owner rows, and the local server key read the same two rows. Login and Utskick access still need an end-to-end check after the hosted app uses this project. The role currently restricts Utskick only; it does not implement the later full Owner/Kassör/Läsare permissions plan.
+
+## Simplified admin and manual pledges (12 November)
+
+Unfinished navigation entries (campaign management, donor directory, event mode, users/roles) are hidden, with data and authorization unchanged. Utskick displays configured channels only. No schema migration is needed for this scope change: the server lazily inserts a private draft `al-rahma-main` bookkeeping collection using the existing unique slug constraint, without updating public homepage totals or changing old campaigns. New pledges need donor/amount/dates only and default to no automatic reminders. Each instalment links to a prefilled manual cash/bank-transfer form. A second admin approves it from the pledge Payments tab or Transactions; only confirmed transactions reduce the balance. Partial payments, fulfilled status, refunds and cancellation are covered by PostgreSQL-backed server-action tests (`tests/pledges.cjs`). Browser verification uses only isolated fixture accounts/data; no real pledges/payments were created.
+
+## Översikt dashboard (12 November)
+
+The dashboard reads homepage totals from `campaign_totals` using `publicRaised`, renders the shared `ProgressCard`, and refreshes from `/api/public/progress` every 15 seconds and on mount/focus/visibility return. Owner edit links target `#insamling` and `#betaluppgifter` in the existing settings editor; the public homepage opens in a new tab. Registered transaction amounts remain visibly separate from the manually adjusted public total. Monthly totals use confirmed transactions within the current Stockholm calendar month, matching Reports net received. Active unpaid pledges and monthly transactions are paginated; failed reads are not presented as zero. Broadcast metadata and edit shortcuts remain Owner-only. No schema migration or live data edit is needed. PostgreSQL-backed `tests/overview.cjs` verifies public endpoint parity, summary calculations, permissions and read failures. Isolated browser testing verified 125,000 / 500,000 / 25% on both pages, the settings/website/Utskick links, and widths 320–1440 px.

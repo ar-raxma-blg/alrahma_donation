@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import { ComingSoon } from '@/components/admin/ui';
-export default function Page() {
-  return (
-    <ComingSoon title="Betalsätt" phase="Kommer i fas 4" why="Här styrs vart givarnas pengar går. Ändringar ska godkännas av en andra admin innan de gäller.">
-      <p className="mt-3 text-sm">Tills vidare ändras betalkonton i den <Link href="/admin/legacy" className="font-bold text-mosque-emerald underline">gamla adminpanelen</Link> (fliken Betalkonton).</p>
-    </ComingSoon>
-  );
+import HomepageSettings from '@/components/admin/HomepageSettings';
+import { getAdminUser } from '@/lib/auth';
+import { Card } from '@/components/admin/ui';
+import PanelHeader, { adminPanelLayout } from '@/components/admin/PanelHeader';
+
+export default async function Page() {
+  if (!await getAdminUser('owner')) return <section className={adminPanelLayout}><PanelHeader category="Inställningar" title="Hemsida & betalsätt" description="Endast Owner får ändra hemsidans betaluppgifter och total." /><Card>Kontakta en Owner om uppgifterna behöver ändras.</Card></section>;
+  return <HomepageSettings />;
 }

@@ -1,6 +1,7 @@
 import { Channel } from './communication';
+import { BroadcastFailureCode, classifyProviderFailure, FAILURE_INFO } from './broadcast-diagnostics';
 
-type Result = { ok: boolean; simulated: false; error?: string; messageId?: string };
+type Result = { ok: boolean; simulated: false; error?: string; messageId?: string; failureCode?: BroadcastFailureCode; httpStatus?: number };
 export function providerStatus(): Record<Channel, boolean> {
   const e = process.env;
   return {
@@ -21,21 +22,31 @@ function smsRequest(to: string, body: string, dryrun = false): RequestInit {
 async function deliver(url: string, init: RequestInit): Promise<Result> {
   try {
     const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
+    if (!response.ok) {
+      let body = '';
+      if (url.includes('api.46elks.com')) { try { body = await response.text(); } catch {} }
+      const failureCode = classifyProviderFailure(response.status, body);
+      return { ok: false, simulated: false, error: `Provider HTTP ${response.status}`, failureCode, httpStatus: response.status };
+    }
     let messageId: string | undefined;
     if (response.ok && (url.includes('graph.facebook.com') || url.includes('api.46elks.com'))) {
       try { const data = await response.json(); messageId = url.includes('graph.facebook.com') ? data.messages?.[0]?.id : data.id; } catch {}
     }
     return { ok: response.ok, simulated: false, ...(messageId ? { messageId } : {}), ...(response.ok ? {} : { error: `Provider HTTP ${response.status}` }) };
-  } catch { return { ok: false, simulated: false, error: 'Provider connection failed' }; }
+  } catch { return { ok: false, simulated: false, error: 'Provider connection failed', failureCode: 'connection_unknown' }; }
 }
 export async function sendSms(to: string, body: string): Promise<Result> {
-  if (!providerStatus().sms) return { ok: false, simulated: false, error: 'SMS provider is not configured' };
+  if (!providerStatus().sms) return { ok: false, simulated: false, error: 'SMS provider is not configured', failureCode: 'not_configured' };
   return deliver('https://api.46elks.com/a1/sms', smsRequest(to, body));
 }
 export async function estimateSms(to: string, body: string): Promise<{ estimatedCost: number; parts: number }> {
   if (!providerStatus().sms) throw new Error('SMS-leverantören är inte konfigurerad.');
   const response = await fetch('https://api.46elks.com/a1/sms', { ...smsRequest(to, body, true), signal: AbortSignal.timeout(10000) });
-  if (!response.ok) throw new Error('46elks kunde inte uppskatta SMS-kostnaden.');
+  if (!response.ok) {
+    let body = ''; try { body = await response.text(); } catch {}
+    const info = FAILURE_INFO[classifyProviderFailure(response.status, body)];
+    throw new Error(`46elks kunde inte uppskatta SMS-kostnaden. ${info.title}. ${info.action} (HTTP ${response.status})`);
+  }
   const data = await response.json();
   if (!Number.isSafeInteger(data.estimated_cost) || data.estimated_cost < 0 || !Number.isSafeInteger(data.parts) || data.parts < 1) throw new Error('46elks gav ett ogiltigt kostnadsbesked.');
   return { estimatedCost: data.estimated_cost, parts: data.parts };
@@ -47,6 +58,14 @@ export async function elksCurrency(): Promise<string> {
   const data = await response.json();
   if (typeof data.currency !== 'string' || !/^[A-Z]{3}$/.test(data.currency)) throw new Error('46elks gav en ogiltig kontovaluta.');
   return data.currency;
+}
+export async function elksBalance(): Promise<{ currency: string; balance: number }> {
+  if (!providerStatus().sms) throw new Error('SMS-leverantören är inte konfigurerad.');
+  const response = await fetch('https://api.46elks.com/a1/me', { headers: { Authorization: elksAuth() }, signal: AbortSignal.timeout(10000), cache: 'no-store' });
+  if (!response.ok) throw new Error('Kunde inte läsa saldot hos 46elks.');
+  const data = await response.json();
+  if (typeof data.currency !== 'string' || !/^[A-Z]{3}$/.test(data.currency) || !Number.isSafeInteger(data.balance)) throw new Error('46elks gav ett ogiltigt saldo.');
+  return { currency: data.currency, balance: data.balance };
 }
 export async function estimateSmsBatch(addresses: string[], body: string) {
   const [currency, estimates] = await Promise.all([

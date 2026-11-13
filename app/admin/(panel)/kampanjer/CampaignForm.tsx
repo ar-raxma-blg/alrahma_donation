@@ -1,12 +1,13 @@
 'use client';
 
+import { adminPanelInput, adminPanelPrimaryButton, adminPanelSecondaryButton } from '@/components/admin/PanelHeader';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { fmtSEK } from '@/lib/format';
 import { Campaign } from '@/lib/admin/types';
 import { deleteCampaign, saveCampaign } from './actions';
 
-const input = 'w-full rounded-lg border border-mosque-ink/15 bg-white px-3 py-2.5 text-sm';
+const input = adminPanelInput;
 const label = 'mb-1.5 block text-xs font-bold text-mosque-ink/60';
 
 export default function CampaignForm({
@@ -142,10 +143,10 @@ export default function CampaignForm({
         {error && <div role="alert" className="rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700">{error}</div>}
 
         <div className="flex flex-wrap items-center gap-3">
-          <button disabled={pending} className="rounded-lg bg-mosque-emerald px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          <button disabled={pending} className={adminPanelPrimaryButton}>
             {pending ? 'Sparar…' : 'Spara'}
           </button>
-          <button type="button" onClick={() => router.push('/admin/kampanjer')} className="rounded-lg bg-mosque-ink/10 px-5 py-2.5 text-sm font-bold">Avbryt</button>
+          <button type="button" onClick={() => router.push('/admin/kampanjer')} className={adminPanelSecondaryButton}>Avbryt</button>
           {campaign && canDelete && !confirmDelete && (
             <button type="button" onClick={() => setConfirmDelete(true)} className="ml-auto text-sm font-semibold text-red-600 underline">Ta bort kampanjen</button>
           )}

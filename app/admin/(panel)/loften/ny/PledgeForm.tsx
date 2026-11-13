@@ -1,11 +1,12 @@
 'use client';
 
+import { adminPanelInput, adminPanelPrimaryButton, adminPanelSecondaryButton } from '@/components/admin/PanelHeader';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { addMonths } from '@/lib/admin/dates';
 import { createPledge } from '../actions';
 
-const input = 'w-full rounded-lg border border-mosque-ink/15 bg-white px-3 py-2.5 text-sm';
+const input = adminPanelInput;
 const label = 'mb-1.5 block text-xs font-bold text-mosque-ink/60';
 
 type Inst = { due_on: string; amount_sek: number };
@@ -20,18 +21,16 @@ function schedule(total: number, n: number, start: string): Inst[] {
   }));
 }
 
-export default function PledgeForm({ campaigns, donors, today }: { campaigns: { id: string; title: string }[]; donors: { id: string; full_name: string }[]; today: string }) {
+export default function PledgeForm({ donors, today }: { donors: { id: string; full_name: string }[]; today: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [campaign, setCampaign] = useState(campaigns[0]?.id ?? '');
   const [donorId, setDonorId] = useState('');
   const [nd, setNd] = useState({ full_name: '', phone: '', email: '', consent_storage: false, consent_contact: false });
   const [total, setTotal] = useState('');
   const [count, setCount] = useState('6');
   const [custom, setCustom] = useState('3');
   const [startDate, setStartDate] = useState(today);
-  const [reminders, setReminders] = useState(true);
   const [edited, setEdited] = useState<Inst[] | null>(null);
 
   const n = count === 'custom' ? Math.max(1, Math.min(60, Number(custom) || 1)) : Number(count);
@@ -46,11 +45,10 @@ export default function PledgeForm({ campaigns, donors, today }: { campaigns: { 
     setError(null);
     start(async () => {
       const res = await createPledge({
-        campaign_id: campaign,
         donor_id: donorId || undefined,
         new_donor: donorId ? undefined : { full_name: nd.full_name, phone: nd.phone || undefined, email: nd.email, consent_storage: nd.consent_storage, consent_contact: nd.consent_contact },
         total_sek: Number(total),
-        reminders,
+        reminders: false,
         installments: rows.map((r) => ({ due_on: r.due_on, amount_sek: Number(r.amount_sek) }))
       });
       if (!res.ok) return setError(res.error);
@@ -59,17 +57,11 @@ export default function PledgeForm({ campaigns, donors, today }: { campaigns: { 
     });
   };
 
-  if (campaigns.length === 0) return <div className="rounded-2xl border border-mosque-ink/10 bg-white p-5 text-sm">Skapa en kampanj först under Kampanjer.</div>;
-
   return (
     <form onSubmit={submit} className="flex max-w-3xl flex-col gap-5">
       <section className="flex flex-col gap-4 rounded-2xl border border-mosque-ink/10 bg-white p-5">
-        <h2 className="text-base font-extrabold">Givare och kampanj</h2>
+        <h2 className="text-base font-extrabold">Givare</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={label} htmlFor="pl-campaign">Kampanj</label>
-            <select id="pl-campaign" className={input} value={campaign} onChange={(e) => setCampaign(e.target.value)}>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</select>
-          </div>
           <div>
             <label className={label} htmlFor="pl-donor">Givare</label>
             <select id="pl-donor" className={input} value={donorId} onChange={(e) => setDonorId(e.target.value)}>
@@ -84,7 +76,7 @@ export default function PledgeForm({ campaigns, donors, today }: { campaigns: { 
             <div><label className={label} htmlFor="nd-phone">Telefon</label><input id="nd-phone" className={input} inputMode="tel" value={nd.phone} onChange={(e) => setNd({ ...nd, phone: e.target.value })} /></div>
             <div><label className={label} htmlFor="nd-email">E-post</label><input id="nd-email" type="email" className={input} value={nd.email} onChange={(e) => setNd({ ...nd, email: e.target.value })} /></div>
             <label className="flex items-start gap-2 text-sm sm:col-span-3"><input type="checkbox" className="mt-1" checked={nd.consent_storage} onChange={(e) => setNd({ ...nd, consent_storage: e.target.checked })} />Givaren har godkänt att vi sparar namn och kontaktuppgifter (krävs).</label>
-            <label className="flex items-start gap-2 text-sm sm:col-span-3"><input type="checkbox" className="mt-1" checked={nd.consent_contact} onChange={(e) => setNd({ ...nd, consent_contact: e.target.checked })} />Givaren har godkänt att vi kontaktar hen om löftet (påminnelser).</label>
+            <label className="flex items-start gap-2 text-sm sm:col-span-3"><input type="checkbox" className="mt-1" checked={nd.consent_contact} onChange={(e) => setNd({ ...nd, consent_contact: e.target.checked })} />Givaren har godkänt kontakt om löftet (valfritt; inga automatiska påminnelser).</label>
           </div>
         )}
       </section>
@@ -102,11 +94,11 @@ export default function PledgeForm({ campaigns, donors, today }: { campaigns: { 
           </div>
           <div><label className={label} htmlFor="pl-start">Första förfallodag</label><input id="pl-start" type="date" required className={input} value={startDate} onChange={(e) => { setStartDate(e.target.value); setEdited(null); }} /></div>
         </div>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={reminders} onChange={(e) => setReminders(e.target.checked)} />Påminnelse 2 dagar före varje förfallodag (om givaren godkänt kontakt)</label>
+        <p className="text-sm text-mosque-ink/60">Löftet hör till huvudinsamlingen. Betalningar registreras manuellt; inga automatiska påminnelser skickas.</p>
 
         {rows.length > 0 && (
-          <div>
-            <table className="w-full text-sm">
+          <div className="min-w-0 overflow-x-auto">
+            <table className="w-full min-w-[360px] text-sm">
               <thead className="text-left text-xs text-mosque-ink/60"><tr><th className="py-1">#</th><th className="py-1">Förfaller</th><th className="py-1">Belopp (kr)</th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
@@ -124,9 +116,9 @@ export default function PledgeForm({ campaigns, donors, today }: { campaigns: { 
       </section>
 
       {error && <div role="alert" className="rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700">{error}</div>}
-      <div className="flex gap-3">
-        <button disabled={pending || rows.length === 0 || sum !== Number(total)} className="rounded-lg bg-mosque-emerald px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{pending ? 'Sparar…' : 'Spara löftet'}</button>
-        <button type="button" onClick={() => router.push('/admin/loften')} className="rounded-lg bg-mosque-ink/10 px-5 py-2.5 text-sm font-bold">Avbryt</button>
+      <div className="flex flex-wrap gap-3">
+        <button disabled={pending || rows.length === 0 || sum !== Number(total)} className={adminPanelPrimaryButton}>{pending ? 'Sparar…' : 'Spara löftet'}</button>
+        <button type="button" onClick={() => router.push('/admin/loften')} className={adminPanelSecondaryButton}>Avbryt</button>
       </div>
     </form>
   );
