@@ -15,7 +15,10 @@ const nextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
-  }
+  },
+  // The admin lists must show fresh data when you navigate back to them. Next 14.2 keeps
+  // visited pages in the browser's router cache for 30s; Next 15 defaults to 0. Pin it.
+  experimental: { staleTimes: { dynamic: 0, static: 30 } },
 };
 
 export default nextConfig;
