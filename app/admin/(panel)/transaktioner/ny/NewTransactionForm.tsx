@@ -57,6 +57,7 @@ export default function NewTransactionForm({
           <label className={label} htmlFor="method">Betalsätt</label>
           <select id="method" name="method" required className={input} defaultValue="bank_transfer">
             <option value="cash">Kontant</option>
+            <option value="swish">Swish</option>
             <option value="bank_transfer">Banköverföring</option>
           </select>
         </div>

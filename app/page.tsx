@@ -5,6 +5,9 @@ import { PublicDonation } from '@/lib/types';
 import TrackerClient from './TrackerClient';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { publicRaised } from '@/lib/homepage';
+import { resolveController } from '@/lib/privacy-policy';
+import TranslationProvider from '@/components/TranslationProvider';
+import { getTranslationOverrides } from '@/lib/translations-server';
 
 export const revalidate = 0; 
 
@@ -42,14 +45,15 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
     { auth: { persistSession: false } }
   );
 
-  const [{ data: totals }, { data: donations }, { data: settings }] = await Promise.all([
+  const [{ data: totals }, { data: donations }, { data: settings }, overrides] = await Promise.all([
     supabase.from('campaign_totals').select('*').eq('id', 'main').single(),
     supabase
       .from('public_donations')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20),
-    supabaseAdmin().from('campaign_settings').select('*').eq('id', 'main').single()
+    supabaseAdmin().from('campaign_settings').select('*').eq('id', 'main').single(),
+    getTranslationOverrides()
   ]);
 
   const swish = settings?.swish_number ? swishUrl(settings.swish_number) : null;
@@ -71,17 +75,18 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
     swish: swish || settings?.swish_qr_url ? { kind: 'swish' as const, svg: swish ? await qrSvg(swish) : undefined, imageUrl: settings?.swish_qr_url || undefined, detail: settings?.swish_number || undefined } : undefined,
     // PayPal only uses its own configured link/image; never reuse Swish here.
     paypal: settings?.paypal_qr_url
-      ? { kind: 'paypal' as const, imageUrl: settings.paypal_qr_url, detail: settings.paypal_link?.replace(/^https?:\/\//i, '') || undefined }
+      ? { kind: 'paypal' as const, imageUrl: settings.paypal_qr_url, detail: settings.paypal_link?.replace(/^https?:\/\//i, '') || undefined, href: paypal || undefined }
       : paypal
-      ? { kind: 'paypal' as const, svg: await qrSvg(paypal), detail: settings!.paypal_link.replace(/^https?:\/\//i, '') }
+      ? { kind: 'paypal' as const, svg: await qrSvg(paypal), detail: settings!.paypal_link.replace(/^https?:\/\//i, ''), href: paypal! }
       : undefined,
-    card: card ? { kind: 'card' as const, svg: await qrSvg(card), detail: settings!.card_link.replace(/^https?:\/\//i, '') } : undefined,
+    card: card ? { kind: 'card' as const, svg: await qrSvg(card), detail: settings!.card_link.replace(/^https?:\/\//i, ''), href: card! } : undefined,
     bank: bankRows.length
       ? { kind: 'bank' as const, rows: bankRows }
       : undefined
   };
 
   return (
+    <TranslationProvider overrides={overrides}>
     <TrackerClient
       qrCodes={qrCodes}
       goal={Number(totals?.goal_sek ?? 0)}
@@ -91,6 +96,10 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
       subtitle={null}
       isLive={settings?.is_live ?? true}
       pausedMessage={settings?.paused_message ?? null}
+      showLiveFeed={settings?.show_live_feed !== false}
+      projectImageUrl={settings?.project_image_url || null}
+      org={resolveController(settings?.privacy_policy)}
     />
+    </TranslationProvider>
   );
 }

@@ -134,3 +134,30 @@ export async function setReminders(id: string, on: boolean): Promise<Result> {
   revalidatePath(`/admin/loften/${id}`);
   return { ok: true };
 }
+
+const editSchema = z.array(z.object({
+  id: z.string().uuid().nullable().optional(),
+  due_on: z.iso.date('Varje delbetalning behöver ett giltigt datum.'),
+  amount_sek: z.coerce.number({ error: 'Ange beloppet i hela kronor.' }).int('Delbetalningar ska vara i hela kronor.').positive('Varje delbetalning måste vara större än 0 kr.').max(100_000_000)
+})).min(1, 'Minst en delbetalning krävs.').max(60, 'Högst 60 delbetalningar.');
+
+export async function editPledge(id: string, installments: { id?: string | null; due_on: string; amount_sek: number | string }[]): Promise<Result> {
+  const user = await getAdminUser();
+  if (!user) return { ok: false, error: 'Du är inte inloggad som admin.' };
+  if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: 'Okänt löfte.' };
+  const parsed = editSchema.safeParse(installments);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const { error } = await supabaseAdmin().rpc('edit_pledge', {
+    p_pledge: id,
+    p_installments: parsed.data.map((i) => ({ id: i.id ?? null, due_on: i.due_on, amount_sek: i.amount_sek })),
+    actor: user.id,
+    actor_name: user.name
+  });
+  if (error) {
+    if (error.code === '02000') return { ok: false, error: 'Löftet är avbrutet och kan inte ändras.' };
+    if (error.code === '22023') return { ok: false, error: 'Delbetalningar med registrerade betalningar kan inte ändra belopp eller tas bort.' };
+    return { ok: false, error: 'Kunde inte spara löftet. Kontrollera att databasuppdateringen för löften är installerad.' };
+  }
+  revalidatePath('/admin', 'layout');
+  return { ok: true };
+}

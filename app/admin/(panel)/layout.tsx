@@ -27,6 +27,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     {
       title: 'Givare',
       items: [
+        { href: '/admin/manadsgivare', label: 'Månadsgivare', icon: 'donors' },
         { href: '/admin/utskick', label: 'Utskick', icon: 'messages' }
       ]
     },
@@ -35,6 +36,8 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       title: 'Inställningar',
       items: [
         { href: '/admin/betalsatt', label: 'Hemsida & betalsätt', icon: 'payments' },
+        { href: '/admin/oversattningar', label: 'Texter & språk', icon: 'translate' },
+        { href: '/admin/integritetspolicy', label: 'Integritetspolicy', icon: 'users' },
         { href: '/admin/logg', label: 'Logg', icon: 'log' }
       ]
     }
