@@ -45,7 +45,7 @@ export default async function Pledges({ searchParams: searchParamsPromise }: { s
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full min-w-[760px] text-sm">
-            <thead className="bg-mosque-cream text-left text-xs text-mosque-ink/60"><tr><th className="p-3">Givare</th><th className="p-3">Totalt</th><th className="p-3">Betalt</th><th className="p-3">Kvar</th><th className="p-3">Nästa förfallo</th><th className="p-3">Status</th></tr></thead>
+            <thead className="bg-mosque-cream text-left text-xs text-mosque-ink/60"><tr><th className="p-3">Givare</th><th className="p-3">Totalt</th><th className="p-3">Betalt</th><th className="p-3">Kvar</th><th className="p-3">Nästa förfallo</th><th className="p-3">Status</th><th className="p-3" /></tr></thead>
             <tbody>
               {shown.map(({ p, paid, next, state }) => {
                 const donor = p.donor as unknown as { full_name: string };
@@ -57,6 +57,7 @@ export default async function Pledges({ searchParams: searchParamsPromise }: { s
                     <td className="p-3 tabular-nums">{fmtSEK(Math.max(p.total_sek - paid, 0))}</td>
                     <td className="p-3">{state === 'cancelled' || !next ? '–' : <span className={next.due_on < today ? 'font-bold text-red-700' : ''}>{fmtDate(next.due_on)}</span>}</td>
                     <td className="p-3"><Pill tone={TONE[state]}>{PLEDGE_STATE_SV[state]}</Pill></td>
+                    <td className="p-3 text-right">{state !== 'cancelled' && <Link href={`/admin/loften/${p.id}?tab=redigera`} className="font-bold text-mosque-emerald underline">Redigera</Link>}</td>
                   </tr>
                 );
               })}

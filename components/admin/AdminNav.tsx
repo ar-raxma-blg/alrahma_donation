@@ -28,7 +28,8 @@ const ICONS = {
   payments: 'M3 7h4m4 0h10M3 17h10m4 0h4M9 4v6m8 4v6',
   users: 'M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3Zm-3 9 2 2 4-4',
   log: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
-  event: 'M8 5v14l11-7L8 5Z'
+  event: 'M8 5v14l11-7L8 5Z',
+  translate: 'M4 5h8M8 3v2m-3 0c.5 3 2.500 5.500 6 7M11 5c-.5 3-3 6-7 8m9 7 4-10 4 10m-1.500-3h-5'
 };
 
 export function Icon({ name }: { name: keyof typeof ICONS }) {

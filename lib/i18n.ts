@@ -1,4 +1,5 @@
 import { Lang } from './types';
+import { publicExtra } from './i18n-public';
 
 export const translations: Record<Lang, Record<string, string>> = {
   en: {
@@ -198,6 +199,11 @@ export const translations: Record<Lang, Record<string, string>> = {
   }
 };
 
-export function t(lang: Lang, key: string): string {
-  return translations[lang]?.[key] ?? translations.en[key] ?? key;
+for (const l of Object.keys(publicExtra) as Lang[]) Object.assign(translations[l], publicExtra[l]);
+
+export type TranslationOverrides = Partial<Record<Lang, Record<string, string>>>;
+
+// Admin-edited text (table translation_overrides) wins over the defaults above.
+export function t(lang: Lang, key: string, overrides?: TranslationOverrides): string {
+  return overrides?.[lang]?.[key] || translations[lang]?.[key] || translations.en[key] || key;
 }

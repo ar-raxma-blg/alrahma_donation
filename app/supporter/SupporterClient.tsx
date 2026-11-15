@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useLang } from '@/lib/use-lang';
 import { Lang, TransparencyFile } from '@/lib/types';
-import { t } from '@/lib/i18n';
+import { useT } from '@/components/TranslationProvider';
 import PublicHeader from '@/components/PublicHeader';
 import RegisterForm from '@/components/RegisterForm';
 
@@ -13,7 +13,8 @@ export default function SupporterClient({
   initialLang: Lang;
   transparencyFiles: TransparencyFile[];
 }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
+  const t = useT();
+  const [lang, setLang] = useLang(initialLang);
 
   return (
     <div
@@ -23,11 +24,13 @@ export default function SupporterClient({
       <div className="mx-auto max-w-2xl">
         <PublicHeader lang={lang} onLanguageChange={setLang} />
 
-        <a href="/" className="text-sm font-semibold text-mosque-mint/80 hover:text-mosque-mint">
+        <main id="main" tabIndex={-1} className="outline-none">
+        <a href={`/?lang=${lang}`} className="inline-flex min-h-[44px] items-center text-base font-semibold text-mosque-mint underline underline-offset-4">
           {t(lang, 'backHome')}
         </a>
 
         <RegisterForm lang={lang} transparencyFiles={transparencyFiles} />
+        </main>
       </div>
     </div>
   );

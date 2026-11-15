@@ -7,10 +7,11 @@ import { InstallmentBalance, PLEDGE_STATE_SV, pledgeState } from '@/lib/admin/pl
 import { fmtSEK } from '@/lib/format';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import PledgeSettings from './PledgeSettings';
+import EditPledge from './EditPledge';
 import RowActions from '../../transaktioner/RowActions';
 import { getAdminUser } from '@/lib/auth';
 
-const TABS: [string, string][] = [['delbetalningar', 'Delbetalningar'], ['betalningar', 'Betalningar'], ['installningar', 'Inställningar']];
+const TABS: [string, string][] = [['delbetalningar', 'Delbetalningar'], ['betalningar', 'Betalningar'], ['redigera', 'Redigera'], ['installningar', 'Inställningar']];
 
 export default async function PledgeDetail({ params: paramsPromise, searchParams: searchParamsPromise }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; registered?: string }> }) {
   const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
@@ -102,6 +103,12 @@ export default async function PledgeDetail({ params: paramsPromise, searchParams
             </table>
           </Card>
         )
+      )}
+
+      {tab === 'redigera' && (
+        p.status === 'active'
+          ? <EditPledge key={inst.map(i => `${i.installment_id}${i.due_on}${i.amount_sek}`).join()} id={p.id} installments={inst.map(i => ({ id: i.installment_id, due_on: i.due_on, amount_sek: i.amount_sek, locked: (txs ?? []).some(t => t.installment_id === i.installment_id) }))} />
+          : <Card className="text-sm">Avbrutna löften kan inte ändras.</Card>
       )}
 
       {tab === 'installningar' && (

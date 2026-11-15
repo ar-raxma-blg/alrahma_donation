@@ -24,7 +24,7 @@ const manualSchema = z.object({
   campaign_id: z.string().uuid().optional(),
   amount_sek: z.coerce.number({ error: 'Ange beloppet i hela kronor.' }).int('Ange beloppet i hela kronor.').positive('Beloppet måste vara större än 0 kr.').max(100_000_000),
   received_on: date,
-  method: z.enum(['cash', 'bank_transfer'], { error: 'Välj kontant eller banköverföring.' }),
+  method: z.enum(['cash', 'bank_transfer', 'swish'], { error: 'Välj kontant, Swish eller banköverföring.' }),
   receipt_no: z.string().trim().max(40).optional(),
   received_by_name: z.string().trim().max(60).optional(),
   display_name: firstName,
@@ -191,13 +191,14 @@ export interface RowCheck {
   duplicate?: string;
 }
 
-const METHOD_ALIASES: Record<string, 'cash' | 'bank_transfer' | 'import'> = {
+const METHOD_ALIASES: Record<string, 'cash' | 'bank_transfer' | 'swish' | 'import'> = {
   kontant: 'cash',
   cash: 'cash',
   bank: 'bank_transfer',
   'banköverföring': 'bank_transfer',
   bank_transfer: 'bank_transfer',
   bankgiro: 'bank_transfer',
+  swish: 'swish',
   '': 'import'
 };
 
@@ -219,7 +220,7 @@ async function checkRows(campaignId: string, rows: ImportRow[]) {
     });
     const method = METHOD_ALIASES[(r.method ?? '').trim().toLowerCase()];
     if (!base.success) return { check: { error: base.error.issues[0].message } as RowCheck, value: null };
-    if (!method) return { check: { error: `Okänt betalsätt “${r.method}”. Använd Kontant eller Bank.` } as RowCheck, value: null };
+    if (!method) return { check: { error: `Okänt betalsätt “${r.method}”. Använd Kontant, Swish eller Bank.` } as RowCheck, value: null };
     return { check: {} as RowCheck, value: { ...base.data, method } };
   });
 

@@ -1,9 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+html {
+  /* Respect the visitor's own text-size setting; 100% = 16px by default. */
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* Arabic needs more line height and no letter-spacing (it breaks joined letters). */
+[lang='ar'] body,
+[dir='rtl'] {
+  line-height: 1.8;
+  letter-spacing: 0;
+}
+[dir='rtl'] * {
+  letter-spacing: 0 !important;
+}
+
+/* Readable line length for running text. */
+.prose-copy {
+  max-width: 70ch;
+}
+
+/* Visible keyboard focus on every interactive element (WCAG 2.4.7 / 2.4.11). */
+:focus-visible {
+  outline: 3px solid #e3c25a;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+/* Light surfaces (forms/admin) need a dark ring instead. */
+.on-light :focus-visible {
+  outline-color: #0e2a14;
+}
+
+/* Anchored sections must not hide under the sticky bar. */
+[id] {
+  scroll-margin-top: 1rem;
+}
+
+/* Reduced motion: no animation, no smooth scroll, no transitions. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Windows high-contrast / forced colours: keep borders visible. */
+@media (forced-colors: active) {
+  .card-border {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Public forms: 44px targets, 16px text (also stops iOS zooming on focus), large check boxes. */
+.public-form input:not([type='checkbox']):not([type='radio']),
+.public-form select {
+  min-height: 44px;
+  font-size: 1rem;
+}
+.public-form input[type='checkbox'],
+.public-form input[type='radio'] {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  accent-color: #e3c25a;
+}
+.public-form label:has(> input[type='checkbox']),
+.public-form label:has(> input[type='radio']) {
+  min-height: 44px;
 }
