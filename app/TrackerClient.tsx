@@ -118,6 +118,11 @@ export default function TrackerClient({
           <div className="text-2xl text-mosque-muted">{t(lang, 'jazak')}</div>
           <div className="mt-3 text-base text-mosque-muted">© {new Date().getFullYear()} {t(lang, 'mosqueName')}</div>
           <a href={`/privacy?lang=${lang}`} className="mt-1 inline-flex min-h-[44px] items-center text-base font-semibold underline underline-offset-4">{t(lang, 'footerPrivacy')}</a>
+          <div className="mt-2 text-base text-mosque-muted">
+            {{ en: 'Gift from', sv: 'Gåva från', ar: 'هدية من' }[lang]}{' '}
+            <a href="https://smidify.com" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4">Smidify Solutions</a>
+            {' '}(smidify.com)
+          </div>
         </footer>
       </div>
       {isLive && <StickyDonate lang={lang} />}

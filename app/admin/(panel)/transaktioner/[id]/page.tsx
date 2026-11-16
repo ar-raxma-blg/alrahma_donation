@@ -31,7 +31,7 @@ export default async function TransactionDetail({ params: paramsPromise }: { par
 
   // Timeline is derived from the row's own timestamps.
   const events: { at: string; text: string }[] = [
-    { at: t.created_at, text: online ? `Betalning påbörjad via ${METHOD_SV[t.method]}` : `Registrerad av ${who(t.registered_by)}` }
+    { at: t.created_at, text: online ? `Betalning påbörjad via ${METHOD_SV[t.method]}` : !t.registered_by && typeof t.provider_ref === 'string' && t.provider_ref.startsWith('AR-') ? 'Registrerad av givaren själv (publikt formulär)' : `Registrerad av ${who(t.registered_by)}` }
   ];
   if (t.approved_at) events.push({ at: t.approved_at, text: `Godkänd av ${who(t.approved_by)}` });
   else if (t.status === 'confirmed') events.push({ at: t.created_at, text: 'Bekräftad av betalleverantören' });
