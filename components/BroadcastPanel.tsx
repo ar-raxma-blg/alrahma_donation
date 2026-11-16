@@ -48,6 +48,8 @@ export default function BroadcastPanel() {
     return address && !isSwedishSmsAddress(address);
   }).length : 0;
   const visible = group.filter(r => `${r.full_name} ${r.phone || ''} ${r.email}`.toLowerCase().includes(search.toLowerCase()) && (channel !== 'sms' || smsRegion === 'all' || (smsRegion === 'sweden' ? isSwedishSmsAddress(recipientAddress(r, 'sms')) : !!recipientAddress(r, 'sms') && !isSwedishSmsAddress(recipientAddress(r, 'sms')))));
+  const smsYes = recipients.filter(r => !r.comm_opt_out && r.comm_sms);
+  const smsNo = recipients.filter(r => r.comm_opt_out || !r.comm_sms);
   const chosen = eligible.filter(r => selected.includes(r.id));
   const reach = new Set(chosen.map(r => recipientAddress(r, channel))).size;
   const text = channel === 'whatsapp' ? template?.body || '' : message.trim();
@@ -176,6 +178,16 @@ export default function BroadcastPanel() {
     </> : loaded && <p className="rounded-2xl border border-mosque-ink/10 bg-white p-5 text-sm">Inga utskickskanaler är anslutna ännu. Historiken visas nedan.</p>}
 
     {notice && <div role="status" className="rounded-xl border border-mosque-ink/10 bg-white p-4 text-sm"><p>{notice}</p>{!!lastDiagnostics?.failures.length && <BroadcastFailureDetails diagnostics={lastDiagnostics} showBalance={channel === 'sms'} />}</div>}
+    {loaded && <div className="grid gap-4 lg:grid-cols-2">{([
+      { title: 'Har valt SMS', rows: smsYes, empty: 'Ingen har valt SMS ännu.', tone: 'text-mosque-deep' },
+      { title: 'Har inte valt SMS', rows: smsNo, empty: 'Alla givare har valt SMS.', tone: 'text-mosque-ink' }
+    ]).map(g => <div key={g.title} className="rounded-2xl border border-mosque-ink/10 bg-white p-5">
+      <h2 className={`text-lg font-extrabold ${g.tone}`}>{g.title} <span className="tabular-nums">({g.rows.length})</span></h2>
+      {!g.rows.length ? <p className="mt-3 text-sm text-mosque-ink/70">{g.empty}</p> : <ul className="mt-3 max-h-80 divide-y divide-mosque-ink/10 overflow-auto rounded-xl border border-mosque-ink/10">{g.rows.map(r => <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-3 px-3 py-2 text-sm">
+        <span className="font-semibold">{r.full_name}</span>
+        <span className="text-xs text-mosque-ink/70">{r.phone || 'Inget nummer'}{r.comm_opt_out ? ' · Inga aviseringar' : ''}</span>
+      </li>)}</ul>}
+    </div>)}</div>}
     <h2 className="pt-2 text-lg font-extrabold">Utskickshistorik</h2>
     {diagnosticHistoryWarning && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">Felorsakerna kunde inte läsas från loggen. Ladda om sidan eller kontrollera leverantörens historik.</p>}
     {log.map(entry => <article key={entry.id} className="rounded-xl border border-mosque-ink/10 bg-white p-4 text-sm">

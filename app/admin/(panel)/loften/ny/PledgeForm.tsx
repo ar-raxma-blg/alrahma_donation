@@ -35,9 +35,11 @@ export default function PledgeForm({ donors, today }: { donors: { id: string; fu
 
   const n = count === 'custom' ? Math.max(1, Math.min(60, Number(custom) || 1)) : Number(count);
   const auto = useMemo(() => schedule(Number(total), n, startDate), [total, n, startDate]);
-  const rows = edited && edited.length === auto.length ? edited : auto;
+  const rows = edited ?? auto;
   const sum = rows.reduce((s, r) => s + (Number(r.amount_sek) || 0), 0);
 
+  const removeRow = (i: number) => rows.length > 1 && setEdited(rows.filter((_, k) => k !== i));
+  const addRow = () => rows.length < 60 && setEdited([...rows, { due_on: rows.length ? addMonths(rows[rows.length - 1].due_on, 1) : startDate, amount_sek: 0 }]);
   const setRow = (i: number, patch: Partial<Inst>) => setEdited(rows.map((r, k) => (k === i ? { ...r, ...patch } : r)));
 
   const submit = (e: React.FormEvent) => {
@@ -99,18 +101,23 @@ export default function PledgeForm({ donors, today }: { donors: { id: string; fu
         {rows.length > 0 && (
           <div className="min-w-0 overflow-x-auto">
             <table className="w-full min-w-[360px] text-sm">
-              <thead className="text-left text-xs text-mosque-ink/60"><tr><th className="py-1">#</th><th className="py-1">Förfaller</th><th className="py-1">Belopp (kr)</th></tr></thead>
+              <thead className="text-left text-xs text-mosque-ink/60"><tr><th className="py-1">#</th><th className="py-1">Förfaller</th><th className="py-1">Belopp (kr)</th><th className="py-1"><span className="sr-only">Ta bort</span></th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i}>
                     <td className="py-1 pr-3 text-mosque-ink/50">{i + 1}</td>
                     <td className="py-1 pr-3"><input aria-label={`Förfallodag ${i + 1}`} type="date" className={input} value={r.due_on} onChange={(e) => setRow(i, { due_on: e.target.value })} /></td>
                     <td className="py-1"><input aria-label={`Belopp ${i + 1}`} type="number" min={1} step={1} className={input} value={r.amount_sek} onChange={(e) => setRow(i, { amount_sek: Number(e.target.value) })} /></td>
+                    <td className="py-1 pl-2"><button type="button" disabled={rows.length <= 1} onClick={() => removeRow(i)} aria-label={`Ta bort delbetalning ${i + 1}`} className="rounded-lg border border-mosque-ink/20 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-40">Ta bort</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <p className={`mt-2 text-sm font-semibold ${sum === Number(total) ? 'text-emerald-800' : 'text-red-700'}`}>Summa {sum} kr {sum === Number(total) ? '✓' : `(ska vara ${Number(total) || 0} kr)`}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" onClick={addRow} className={adminPanelSecondaryButton}>Lägg till delbetalning</button>
+              {sum !== Number(total) && sum > 0 && <button type="button" onClick={() => setTotal(String(sum))} className={adminPanelSecondaryButton}>Sätt totalen till {sum} kr</button>}
+            </div>
           </div>
         )}
       </section>

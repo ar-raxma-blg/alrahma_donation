@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, PageHead, Pill } from '@/components/admin/ui';
+import { ButtonLink, Card, PageHead, Pill } from '@/components/admin/ui';
 import { fmtDate, stockholmToday } from '@/lib/admin/dates';
 import { InstallmentBalance, PLEDGE_STATE_SV, PledgeState, pledgeState } from '@/lib/admin/pledges';
 import { fmtSEK } from '@/lib/format';
@@ -48,7 +48,7 @@ export default async function MonthlyPayers({ searchParams: searchParamsPromise 
 
   return (
     <div>
-      <PageHead title="Månadsgivare" category="Givare" sub="Alla som betalar i delar. Ett löfte räknas först som betalt när betalningen är godkänd i Transaktioner." />
+      <PageHead title="Månadsgivare" category="Givare" action={<ButtonLink href="/admin/loften/ny" primary>Registrera månadsgivare</ButtonLink>} sub="Alla som betalar i delar. Ett löfte räknas först som betalt när betalningen är godkänd i Transaktioner." />
       {error || balanceError ? (
         <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">Kunde inte hämta månadsgivarna. Ladda om sidan och försök igen.</div>
       ) : (

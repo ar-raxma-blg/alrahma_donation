@@ -176,28 +176,28 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
       </div>
 
       <div className="mb-4.5 mb-4">
-        <p className="mb-2 text-base text-mosque-mint">{text.notificationConsent}</p>
-        <div className="mb-2 text-base font-bold text-mosque-mint">{t(lang, 'communication')}</div>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-3 text-lg leading-relaxed text-white">{text.notificationConsent}</p>
+        <div className="mb-3 text-xl font-bold text-white">{t(lang, 'communication')}</div>
+        <div className="flex flex-wrap gap-3">
           {(
             [
-              ['email', '✉️'],
-              ['sms', '💬'],
-              ['whatsapp', '📱'],
-              ['none', '🚫']
+              ['sms', 'SMS'],
+              ['none', text.none]
             ] as [CommPref, string][]
-          ).map(([key, icon]) => (
+          ).map(([key, label]) => (
             <button
               type="button"
               aria-pressed={comms[key]}
               key={key}
               onClick={() => toggleComm(key)}
-              className={`flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 text-base font-semibold ${
-                comms[key] ? 'bg-mosque-mint/25 text-mosque-cream' : 'bg-transparent text-mosque-muted'
+              className={`flex min-h-[52px] items-center gap-2 rounded-xl border-2 px-5 py-3 text-lg font-bold ${
+                comms[key]
+                  ? 'border-white bg-mosque-mint text-mosque-deep'
+                  : 'border-white/70 bg-white/10 text-white'
               }`}
             >
-              <span>{icon}</span>
-              {key === 'none' ? text.none : key}
+              {label}
+              {comms[key] && <span aria-hidden="true">✓</span>}
             </button>
           ))}
         </div>

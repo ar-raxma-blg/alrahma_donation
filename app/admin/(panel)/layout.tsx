@@ -12,7 +12,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   const user = await getAdminUser();
   // Signed in but not on the allow-list: say so, instead of bouncing back to
   // the login page (which looked like "login does nothing").
-  if (!user) return <NotAdmin id={session.id} email={session.email} />;
+  if (!user) return <NotAdmin email={session.email} />;
 
   const todo = await getTodoCounts();
   const groups: NavGroup[] = [
@@ -28,6 +28,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       title: 'Givare',
       items: [
         { href: '/admin/manadsgivare', label: 'Månadsgivare', icon: 'donors' },
+        { href: '/admin/live-lista', label: 'Live-lista', icon: 'event' },
         { href: '/admin/utskick', label: 'Utskick', icon: 'messages' }
       ]
     },
