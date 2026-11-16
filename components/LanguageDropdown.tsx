@@ -1,46 +1,62 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Lang } from '@/lib/types';
+import { useT } from '@/components/TranslationProvider';
 
 const LABELS: Record<Lang, string> = { en: 'English', sv: 'Svenska', ar: 'العربية' };
 
-export default function LanguageDropdown({
-  lang,
-  onChange
-}: {
-  lang: Lang;
-  onChange: (l: Lang) => void;
-}) {
+export default function LanguageDropdown({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+
+  // Close on Escape (return focus to the button) and on outside click.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); button.current?.focus(); } };
+    const onClick = (e: MouseEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
+  }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={wrap}>
       <button
+        ref={button}
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-bold text-mosque-cream"
+        aria-label={`${t(lang, 'changeLanguage')}: ${LABELS[lang]}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-lg border border-mosque-muted bg-mosque-deep px-4 py-2 text-base font-bold text-mosque-cream"
       >
-        <span className="text-base">🌐</span>
-        {lang.toUpperCase()}
-        <span className="text-[10px] opacity-70">▾</span>
+        <span aria-hidden="true">🌐</span>
+        <span aria-hidden="true">{lang.toUpperCase()}</span>
+        <span aria-hidden="true" className="text-sm">▾</span>
       </button>
       {open && (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[160px] overflow-hidden rounded-lg border border-white/15 bg-mosque-forest shadow-xl">
+        <ul className="absolute end-0 top-[calc(100%+6px)] z-20 m-0 min-w-[180px] list-none overflow-hidden rounded-lg border border-mosque-muted bg-mosque-deep p-0 shadow-xl">
           {(Object.keys(LABELS) as Lang[]).map((code) => (
-            <button
-              key={code}
-              onClick={() => {
-                onChange(code);
-                setOpen(false);
-              }}
-              className={`block w-full px-3.5 py-2.5 text-left text-sm font-semibold ${
-                code === lang ? 'bg-mosque-gold/90 text-mosque-deep' : 'text-mosque-cream/90'
-              }`}
-            >
-              {LABELS[code]}
-            </button>
+            <li key={code}>
+              <button
+                type="button"
+                lang={code}
+                dir={code === 'ar' ? 'rtl' : 'ltr'}
+                aria-current={code === lang ? 'true' : undefined}
+                onClick={() => { onChange(code); setOpen(false); button.current?.focus(); }}
+                className={`flex min-h-[44px] w-full items-center justify-between gap-3 px-4 py-2.5 text-start text-base font-semibold ${
+                  code === lang ? 'bg-mosque-goldLight text-mosque-deep' : 'text-mosque-cream'
+                }`}
+              >
+                {LABELS[code]}
+                {code === lang && <span aria-hidden="true">✓</span>}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { Lang } from './types';
+import { publicExtra } from './i18n-public';
 
 export const translations: Record<Lang, Record<string, string>> = {
   en: {
@@ -32,7 +33,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     monthlyTitle: 'Become a Monthly Supporter',
     monthlyCta: 'Register a Monthly Plan',
     bankTitle: 'Direct Bank Transfer',
-    bankNote: 'Please mention “Minaret Fund” as the reference.',
+    bankNote: 'Please mention “Mosque Build Al–Rahma” as the reference.',
     bankCard: 'Bank (GiroCode)',
     liveTitle: 'Live Donations & Blessings',
     liveSync: 'Updates synchronized automatically',
@@ -97,7 +98,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     monthlyTitle: 'Bli månadsgivare',
     monthlyCta: 'Registrera månadsplan',
     bankTitle: 'Banköverföring',
-    bankNote: 'Ange ”Minaretfonden” som referens.',
+    bankNote: 'Ange "Moské byggnad Al–Rahma" som referens.',
     bankCard: 'Bank (GiroCode)',
     liveTitle: 'Livedonationer & välsignelser',
     liveSync: 'Uppdateras automatiskt',
@@ -162,7 +163,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     monthlyTitle: 'كن داعمًا شهريًا',
     monthlyCta: 'سجّل خطة شهرية',
     bankTitle: 'تحويل بنكي مباشر',
-    bankNote: 'يرجى كتابة «صندوق المئذنة» كمرجع.',
+    bankNote: 'يرجى ذكر “Mosque Build Al–Rahma” كمرجع للتحويل.',
     bankCard: 'البنك (GiroCode)',
     liveTitle: 'التبرعات والدعوات المباشرة',
     liveSync: 'يتم التحديث تلقائيًا',
@@ -198,6 +199,11 @@ export const translations: Record<Lang, Record<string, string>> = {
   }
 };
 
-export function t(lang: Lang, key: string): string {
-  return translations[lang]?.[key] ?? translations.en[key] ?? key;
+for (const l of Object.keys(publicExtra) as Lang[]) Object.assign(translations[l], publicExtra[l]);
+
+export type TranslationOverrides = Partial<Record<Lang, Record<string, string>>>;
+
+// Admin-edited text (table translation_overrides) wins over the defaults above.
+export function t(lang: Lang, key: string, overrides?: TranslationOverrides): string {
+  return overrides?.[lang]?.[key] || translations[lang]?.[key] || translations.en[key] || key;
 }

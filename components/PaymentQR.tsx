@@ -1,5 +1,5 @@
 import { Lang } from '@/lib/types';
-import { t } from '@/lib/i18n';
+import { useT } from '@/components/TranslationProvider';
 import CopyButton from './CopyButton';
 
 export interface QrCode {
@@ -8,6 +8,8 @@ export interface QrCode {
   // uploaded QR image; takes precedence over svg
   imageUrl?: string;
   detail?: string;
+  // deep link that opens the payment app on the visitor's own phone
+  href?: string;
   // bank only: [i18n label key, value] pairs, already filtered for non-empty
   rows?: [string, string][];
 }
@@ -24,6 +26,7 @@ export default function PaymentQR({
   lang: Lang;
   codes: { swish?: QrCode; paypal?: QrCode; card?: QrCode; bank?: QrCode };
 }) {
+  const t = useT();
   const cards = [codes.swish, codes.paypal, codes.card].filter(Boolean) as QrCode[];
   if (cards.length === 0) return null;
   const hintKey = { swish: 'scanSwish', paypal: 'scanPaypal', card: 'scanCard', bank: 'scanBank' } as const;
@@ -35,32 +38,44 @@ export default function PaymentQR({
   return (
     <div className={`${CARD} p-5 sm:p-8`}>
       <h2 className="text-3xl font-extrabold leading-tight">{t(lang, 'instantTitle')}</h2>
-      <p className="mt-1 text-sm text-mosque-cream/70">{t(lang, 'instantSubtitle')}</p>
+      <p className="mt-2 text-base text-mosque-muted">{t(lang, 'instantSubtitle')}</p>
 
       <div className={`mt-6 grid grid-cols-1 gap-4 ${cols}`}>
         {cards.map((c) => {
           const title = t(lang, c.kind);
+          const qrAlt = t(lang, `${c.kind}QrAlt`);
+          const openKey = { swish: 'openCard', paypal: 'openPaypal', card: 'openCard', bank: 'openCard' }[c.kind];
           return (
             <div key={c.kind} className="flex min-w-0 flex-col items-center rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-              <div className="mb-3 text-sm font-bold uppercase tracking-widest text-mosque-gold">{title}</div>
+              <h3 className="mb-3 text-base font-bold uppercase tracking-widest text-mosque-goldLight">{title}</h3>
               {c.imageUrl ? (
                 <div className="aspect-square w-full max-w-[10.5rem] rounded-xl bg-white p-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={c.imageUrl} alt={`${title} QR`} className="h-full w-full object-contain" />
+                  <img src={c.imageUrl} alt={qrAlt} width={168} height={168} loading="lazy" className="h-full w-full object-contain" />
                 </div>
               ) : (
                 <div
                   className="aspect-square w-full max-w-[10.5rem] rounded-xl bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
                   dangerouslySetInnerHTML={{ __html: c.svg! }}
                   role="img"
-                  aria-label={`${title} QR`}
+                  aria-label={qrAlt}
                 />
               )}
-              <div className="mt-3 text-sm text-mosque-mint/80">{t(lang, hintKey[c.kind])}</div>
+              {c.href && (
+                <a
+                  href={c.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-mosque-goldLight px-5 py-3 text-base font-extrabold text-mosque-deep hover:brightness-110"
+                >
+                  {t(lang, openKey)}
+                </a>
+              )}
+              <div className="mt-3 text-base text-mosque-muted">{t(lang, hintKey[c.kind])}</div>
               {c.detail && (
                 <div className="mt-3 flex w-full max-w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2.5">
                   <span className={`min-w-0 flex-1 font-mono font-extrabold text-white ${c.kind === 'swish' ? 'whitespace-nowrap text-base tracking-normal' : 'break-all text-sm leading-6'}`} dir="ltr">{c.detail}</span>
-                  <CopyButton value={c.detail} label={t(lang, 'copy')} doneLabel={t(lang, 'copied')} />
+                  <CopyButton value={c.detail} label={t(lang, 'copy')} doneLabel={t(lang, 'copied')} name={c.kind === 'swish' ? t(lang, 'swishNumber') : title} />
                 </div>
               )}
             </div>

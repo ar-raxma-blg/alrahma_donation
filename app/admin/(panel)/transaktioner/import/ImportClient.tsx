@@ -12,7 +12,7 @@ const FIELDS = [
   { key: 'amount_sek', label: 'Belopp', required: true },
   { key: 'display_name', label: 'Förnamn' },
   { key: 'receipt_no', label: 'Kvittonummer' },
-  { key: 'method', label: 'Betalsätt (Kontant/Bank)' }
+  { key: 'method', label: 'Betalsätt (Kontant/Swish/Bank)' }
 ] as const;
 type FieldKey = (typeof FIELDS)[number]['key'];
 

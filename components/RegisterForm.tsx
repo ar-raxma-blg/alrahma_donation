@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lang, CommPref, TransparencyFile } from '@/lib/types';
-import { t } from '@/lib/i18n';
+import { useT } from '@/components/TranslationProvider';
 import { formText } from '@/lib/registration';
 import { registrationIssues, issueText, RegistrationIssue } from '@/lib/registration-errors';
 
@@ -10,6 +10,7 @@ import { registrationIssues, issueText, RegistrationIssue } from '@/lib/registra
 // writes the donor, the pending donation/plan, and an immutable consent_log
 // row server-side using the service-role key (see lib/supabase/server.ts).
 export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; transparencyFiles: TransparencyFile[] }) {
+  const t = useT();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,6 +29,7 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
   const [displayName, setDisplayName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'swish' | 'bank_transfer'>('swish');
   const [reference, setReference] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const text = formText[lang];
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
     const payload = {
       fullName: name, email, phone, amountSek: Number(amount), preferredLanguage: lang,
       frequency, months: frequency === 'monthly' ? months : null, comms,
-      gdprConsent: consent, publicDisplayConsent, paymentMethod, displayMode, displayName
+      website: honeypot, gdprConsent: consent, publicDisplayConsent, paymentMethod, displayMode, displayName
     };
     const problems = registrationIssues(payload);
     if (problems.length) { setIssues(problems); return; }
@@ -80,18 +82,19 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
 
   if (submitted) {
     return (
-      <div className="mt-6 rounded-[20px] border border-mosque-mint/35 bg-mosque-mint/10 p-7 text-center backdrop-blur">
-        <div className="mb-2 text-3xl">✅</div>
-        <div className="mb-1.5 text-lg font-extrabold text-mosque-cream">{t(lang, 'thankYou')}</div>
-        <div className="mx-auto max-w-md text-[13px] leading-relaxed text-mosque-mint/70">
+      <div role="status" aria-live="polite" className="mt-6 rounded-[20px] border border-mosque-mint bg-mosque-mint/10 p-7 text-center">
+        <div aria-hidden="true" className="mb-2 text-3xl">✅</div>
+        <h1 className="mb-1.5 text-xl font-extrabold text-mosque-cream">{t(lang, 'thankYou')}</h1>
+        <p className="mx-auto mb-2 max-w-md text-base text-mosque-cream">{t(lang, 'thankYouNext')}</p>
+        <div className="mx-auto max-w-md text-base leading-relaxed text-mosque-mint">
           {text.pending}
         </div>
-        <div className="mt-4 text-sm text-mosque-mint/70">{text.reference}</div>
-        <div className="mt-2 break-all font-mono font-bold text-mosque-gold" dir="ltr">{reference}</div>
+        <div className="mt-4 text-base text-mosque-mint">{text.reference}</div>
+        <div className="mt-2 break-all font-mono font-bold text-mosque-goldLight" dir="ltr">{reference}</div>
 
         {transparencyFiles.length > 0 && (
           <div className="mx-auto mt-6 max-w-md rounded-2xl border border-white/10 bg-white/5 p-5 text-left">
-            <div className="mb-3 text-center text-xs font-bold uppercase tracking-wide text-mosque-mint/60">
+            <div className="mb-3 text-center text-base font-bold uppercase tracking-wide text-mosque-mint">
               Se vad som verkligen görs med insamlade medel
             </div>
             <div className="flex flex-col gap-2">
@@ -101,7 +104,7 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
                   href={f.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3.5 py-2.5 text-sm font-semibold text-mosque-cream hover:bg-white/[0.1]"
+                  className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3.5 py-2.5 text-base font-semibold text-mosque-cream hover:bg-white/[0.1]"
                 >
                   <span>📎</span>
                   {f.label || f.url}
@@ -115,9 +118,13 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
   }
 
   return (
-    <form noValidate onSubmit={submit} className="mt-6 rounded-[20px] border border-white/10 bg-white/5 p-7 backdrop-blur">
-      <div className="mb-1 text-lg font-extrabold">{t(lang, 'registerTitle')}</div>
-      <div className="mb-5 text-[13px] text-mosque-mint/70">{t(lang, 'registerSubtitle')}</div>
+    <form noValidate onSubmit={submit} className="public-form mt-6 rounded-[20px] border border-white/10 bg-white/5 p-7 backdrop-blur">
+      {/* Spam trap: invisible to people and screen readers; bots fill it in. */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+        <label>Website<input tabIndex={-1} autoComplete="off" name="website" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
+      </div>
+      <h1 className="mb-1 text-2xl font-extrabold">{t(lang, 'registerTitle')}</h1>
+      <p className="mb-5 text-base text-mosque-muted">{t(lang, 'registerSubtitle')}</p>
 
       <div className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         <Field label={t(lang, 'fullName')} value={name} onChange={setName} placeholder="e.g. Ali Hassan" />
@@ -125,7 +132,7 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
         <Field type="tel" required={comms.sms || comms.whatsapp} label={t(lang, 'phone')} value={phone} onChange={setPhone} placeholder="+46 70 000 00 00" />
         <Field type="number" label={t(lang, 'amount')} value={amount} onChange={setAmount} placeholder="1000" />
       </div>
-      <label className="mb-4 block text-sm">
+      <label className="mb-4 block text-base">
         {text.paymentMethod}
         <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as 'swish' | 'bank_transfer')} className="mt-2 block w-full rounded-lg bg-mosque-deep p-3">
           <option value="swish">Swish</option>
@@ -134,15 +141,15 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
       </label>
 
       <div className="mb-4">
-        <div className="mb-2 text-xs font-bold text-mosque-mint/70">{t(lang, 'plan')}</div>
+        <div className="mb-2 text-base font-bold text-mosque-mint">{t(lang, 'plan')}</div>
         <div className="flex flex-wrap gap-2">
           {(['onetime', 'monthly'] as const).map((f) => (
             <button
               type="button"
               key={f}
               onClick={() => setFrequency(f)}
-              className={`rounded-lg border border-white/15 px-4 py-2 text-sm font-bold ${
-                frequency === f ? 'bg-mosque-gold/90 text-mosque-deep' : 'bg-transparent text-mosque-cream/80'
+              className={`rounded-lg border border-white/15 px-4 py-2 text-base font-bold ${
+                frequency === f ? 'bg-mosque-goldLight text-mosque-deep' : 'bg-transparent text-mosque-muted'
               }`}
             >
               {t(lang, f === 'onetime' ? 'oneTime' : 'monthly')}
@@ -156,8 +163,8 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
                 type="button"
                 key={m}
                 onClick={() => setMonths(m)}
-                className={`rounded-lg border border-white/15 px-3.5 py-2 text-sm font-semibold ${
-                  months === m ? 'bg-mosque-mint/25 text-mosque-cream' : 'bg-transparent text-mosque-cream/70'
+                className={`rounded-lg border border-white/15 px-3.5 py-2 text-base font-semibold ${
+                  months === m ? 'bg-mosque-mint/25 text-mosque-cream' : 'bg-transparent text-mosque-muted'
                 }`}
               >
                 {m} mo
@@ -165,12 +172,12 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
             ))}
           </div>
         )}
-        {frequency === 'monthly' && <p className="mt-2 text-xs text-mosque-mint/70">{text.planTotal}</p>}
+        {frequency === 'monthly' && <p className="mt-2 text-base text-mosque-mint">{text.planTotal}</p>}
       </div>
 
       <div className="mb-4.5 mb-4">
-        <p className="mb-2 text-xs text-mosque-mint/70">{text.notificationConsent}</p>
-        <div className="mb-2 text-xs font-bold text-mosque-mint/70">{t(lang, 'communication')}</div>
+        <p className="mb-2 text-base text-mosque-mint">{text.notificationConsent}</p>
+        <div className="mb-2 text-base font-bold text-mosque-mint">{t(lang, 'communication')}</div>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -185,8 +192,8 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
               aria-pressed={comms[key]}
               key={key}
               onClick={() => toggleComm(key)}
-              className={`flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 text-sm font-semibold ${
-                comms[key] ? 'bg-mosque-mint/25 text-mosque-cream' : 'bg-transparent text-mosque-cream/70'
+              className={`flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 text-base font-semibold ${
+                comms[key] ? 'bg-mosque-mint/25 text-mosque-cream' : 'bg-transparent text-mosque-muted'
               }`}
             >
               <span>{icon}</span>
@@ -203,35 +210,35 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
           onChange={() => setConsent((c) => !c)}
           className="mt-0.5 h-4 w-4 flex-shrink-0"
         />
-        <span className="text-[12.5px] leading-relaxed text-mosque-mint/80">
+        <span className="text-[12.5px] leading-relaxed text-mosque-mint">
           {t(lang, 'gdprText')}{' '}
-          <a href="/privacy" className="font-semibold text-mosque-gold">
+          <a href={`/privacy?lang=${lang}`} className="font-semibold text-mosque-goldLight">
             {t(lang, 'privacyLink')}
           </a>
         </span>
       </label>
       <fieldset className="mb-4 rounded-lg bg-white/[0.04] p-3.5">
-        <legend className="text-sm font-bold">{text.displayChoice}</legend>
-        <p className="mb-3 text-xs text-mosque-mint/80">{text.displayHelp}</p>
+        <legend className="text-base font-bold">{text.displayChoice}</legend>
+        <p className="mb-3 text-base text-mosque-mint">{text.displayHelp}</p>
         {(['anonymous', 'entered', 'custom'] as const).map(mode => (
-          <label key={mode} className="mb-2 flex items-center gap-2 text-sm">
+          <label key={mode} className="mb-2 flex items-center gap-2 text-base">
             <input type="radio" name="displayMode" value={mode} checked={displayMode === mode} onChange={() => { setDisplayMode(mode); setPublicDisplayConsent(false); }} />
             {mode === 'anonymous' ? text.anonymous : mode === 'entered' ? text.enteredName : text.customName}
           </label>
         ))}
-        {displayMode === 'custom' && <label className="mt-3 block text-sm">
+        {displayMode === 'custom' && <label className="mt-3 block text-base">
           {text.displayName}
           <input required maxLength={80} value={displayName} onChange={e => setDisplayName(e.target.value)} className="mt-2 block w-full rounded-lg border border-white/15 bg-white/[0.06] p-3" />
         </label>}
-        {displayMode !== 'anonymous' && <p className="mt-3 break-words text-sm text-mosque-gold">{text.displayName}: {displayMode === 'entered' ? name : displayName}</p>}
+        {displayMode !== 'anonymous' && <p className="mt-3 break-words text-base text-mosque-goldLight">{text.displayName}: {displayMode === 'entered' ? name : displayName}</p>}
       </fieldset>
-      {displayMode !== 'anonymous' && <label className="mb-4 flex items-start gap-2.5 rounded-lg bg-white/[0.04] p-3.5 text-xs text-mosque-mint/80">
+      {displayMode !== 'anonymous' && <label className="mb-4 flex items-start gap-2.5 rounded-lg bg-white/[0.04] p-3.5 text-base text-mosque-mint">
         <input type="checkbox" checked={publicDisplayConsent} onChange={e => setPublicDisplayConsent(e.target.checked)} />
         <span>{text.displayConsent}</span>
       </label>}
 
-      {error && <div role="alert" className="mb-3 text-sm font-semibold text-red-300">{error}</div>}
-      {issues.length > 0 && <ul role="alert" className="mb-4 list-disc space-y-2 rounded-xl border border-red-300/30 bg-red-500/10 py-4 pl-8 pr-4 text-sm text-red-200">{issues.map((issue, index) => <li key={`${issue.field}-${index}`}>{issueText(issue, lang)}</li>)}</ul>}
+      {error && <div role="alert" className="mb-3 text-base font-semibold text-red-300">{error}</div>}
+      {issues.length > 0 && <ul role="alert" className="mb-4 list-disc space-y-2 rounded-xl border border-red-300/30 bg-red-500/10 py-4 pl-8 pr-4 text-base text-red-200">{issues.map((issue, index) => <li key={`${issue.field}-${index}`}>{issueText(issue, lang)}</li>)}</ul>}
 
       <button
         type="submit"
@@ -261,7 +268,7 @@ function Field({
 }) {
   return (
     <label>
-      <div className="mb-1.5 text-xs font-bold text-mosque-mint/70">{label}</div>
+      <div className="mb-1.5 text-base font-bold text-mosque-mint">{label}</div>
       <input
         type={type}
         required={required}
@@ -272,7 +279,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-mosque-cream placeholder:text-mosque-cream/30"
+        className="w-full rounded-lg border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-base text-mosque-cream placeholder:text-mosque-muted"
       />
     </label>
   );

@@ -11,13 +11,15 @@ const config: Config = {
           emerald: '#2f7a3f',
           mint: '#8fd4a0',
           gold: '#c9a227',
+          goldLight: '#e3c25a',
+          muted: '#cdd8cb',
           goldDark: '#8f7115',
           cream: '#f6f4ec',
           ink: '#1c2b25'
         }
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif']
+        sans: ['var(--font-jakarta)', 'var(--font-naskh)', 'system-ui', 'sans-serif']
       },
       keyframes: {
         slideIn: {
