@@ -8,10 +8,12 @@ import RegisterForm from '@/components/RegisterForm';
 
 export default function SupporterClient({
   initialLang,
-  transparencyFiles
+  transparencyFiles,
+  inviteCode
 }: {
   initialLang: Lang;
   transparencyFiles: TransparencyFile[];
+  inviteCode: string | null;
 }) {
   const t = useT();
   const [lang, setLang] = useLang(initialLang);
@@ -25,11 +27,11 @@ export default function SupporterClient({
         <PublicHeader lang={lang} onLanguageChange={setLang} />
 
         <main id="main" tabIndex={-1} className="outline-none">
-        <a href={`/?lang=${lang}`} className="inline-flex min-h-[44px] items-center text-base font-semibold text-mosque-mint underline underline-offset-4">
+        <a href={`/?lang=${lang}${inviteCode ? `&ref=${inviteCode}` : ''}`} className="inline-flex min-h-[44px] items-center text-base font-semibold text-mosque-mint underline underline-offset-4">
           {t(lang, 'backHome')}
         </a>
 
-        <RegisterForm lang={lang} transparencyFiles={transparencyFiles} />
+        <RegisterForm lang={lang} transparencyFiles={transparencyFiles} inviteCode={inviteCode} />
         </main>
       </div>
     </div>

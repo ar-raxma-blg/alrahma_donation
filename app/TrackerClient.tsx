@@ -13,6 +13,7 @@ import { useLang } from '@/lib/use-lang';
 import type { Controller } from '@/lib/privacy-policy';
 import TrustInfo from '@/components/TrustInfo';
 import StickyDonate from '@/components/StickyDonate';
+import ShareInvite from '@/components/ShareInvite';
 
 // Client shell: owns the language toggle and composes the server-fetched
 // totals/donations into the tracker layout.
@@ -27,7 +28,8 @@ export default function TrackerClient({
   refreshProgress = true,
   showLiveFeed = true,
   projectImageUrl = null,
-  org
+  org,
+  inviteCode = null
 }: {
   goal: number;
   raised: number;
@@ -40,6 +42,7 @@ export default function TrackerClient({
   showLiveFeed?: boolean;
   projectImageUrl?: string | null;
   org: Controller;
+  inviteCode?: string | null;
 }) {
   const t = useT();
   const [lang, setLang] = useLang('en');
@@ -86,13 +89,15 @@ export default function TrackerClient({
               </span>
               <h2 className="text-2xl font-extrabold sm:text-3xl">{t(lang, 'monthlyTitle')}</h2>
               <a
-                href={`/supporter?lang=${lang}`}
+                href={`/supporter?lang=${lang}${inviteCode ? `&ref=${inviteCode}` : ''}`}
                 className="w-full max-w-md rounded-xl bg-gradient-to-r from-[#e0c068] to-[#f2c230] px-6 py-3.5 text-center text-base font-extrabold text-mosque-deep shadow-lg transition hover:brightness-110"
               >
                 {t(lang, 'monthlyCta')}
               </a>
               <div className="text-sm text-mosque-muted">{t(lang, 'monthlyHint')}</div>
             </div>
+
+            <ShareInvite lang={lang} />
 
             <div className="mt-5 flex flex-col gap-5 sm:mt-6 sm:gap-6">
               <TrustInfo lang={lang} imageUrl={projectImageUrl} org={org} />
