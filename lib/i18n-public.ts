@@ -5,6 +5,17 @@ import type { Lang } from './types';
 // translation editor.
 export const publicExtra: Record<Lang, Record<string, string>> = {
   en: {
+    shareTitle: 'Share',
+    shareText: 'Know someone who wants to give? Get your own link and share it. We then know who invited whom.',
+    shareNameLabel: 'Your name (optional)',
+    shareNameHint: 'So we know who invited. Only the mosque administrators can see it.',
+    shareCreate: 'Create my link',
+    shareReady: 'Your link is ready. Share it with friends and family.',
+    shareCopy: 'Copy link',
+    shareCopied: 'Copied',
+    shareNative: 'Share…',
+    shareFailed: 'Could not create the link. Please try again.',
+    shareMessage: 'Support the new minaret and hall at Al-Rahma Mosque:',
     changeLanguage: 'Change language',
     skipToContent: 'Skip to content',
     donateNow: 'Donate now',
@@ -37,6 +48,17 @@ export const publicExtra: Record<Lang, Record<string, string>> = {
     privacyTitle: 'Privacy policy'
   },
   sv: {
+    shareTitle: 'Dela',
+    shareText: 'Känner du någon som vill bidra? Skapa din egen länk och dela den. Då ser vi vem som bjöd in vem.',
+    shareNameLabel: 'Ditt namn (frivilligt)',
+    shareNameHint: 'Så att vi vet vem som bjöd in. Bara moskéns administratörer kan se det.',
+    shareCreate: 'Skapa min länk',
+    shareReady: 'Din länk är klar. Dela den med vänner och familj.',
+    shareCopy: 'Kopiera länk',
+    shareCopied: 'Kopierad',
+    shareNative: 'Dela…',
+    shareFailed: 'Det gick inte att skapa länken. Försök igen.',
+    shareMessage: 'Stöd det nya minaretet och hallen vid Al-Rahma Moské:',
     changeLanguage: 'Byt språk',
     skipToContent: 'Hoppa till innehållet',
     donateNow: 'Donera nu',
@@ -69,6 +91,17 @@ export const publicExtra: Record<Lang, Record<string, string>> = {
     privacyTitle: 'Integritetspolicy'
   },
   ar: {
+    shareTitle: 'شارك',
+    shareText: 'هل تعرف من يرغب في التبرع؟ أنشئ رابطك الخاص وشاركه، وبذلك نعرف من دعا من.',
+    shareNameLabel: 'اسمك (اختياري)',
+    shareNameHint: 'لنعرف من قام بالدعوة. لا يراه إلا مسؤولو المسجد.',
+    shareCreate: 'أنشئ رابطي',
+    shareReady: 'رابطك جاهز. شاركه مع الأصدقاء والعائلة.',
+    shareCopy: 'نسخ الرابط',
+    shareCopied: 'تم النسخ',
+    shareNative: 'مشاركة…',
+    shareFailed: 'تعذر إنشاء الرابط. حاول مرة أخرى.',
+    shareMessage: 'ادعم المئذنة والقاعة الجديدة في مسجد الرحمة:',
     changeLanguage: 'تغيير اللغة',
     skipToContent: 'انتقل إلى المحتوى',
     donateNow: 'تبرّع الآن',

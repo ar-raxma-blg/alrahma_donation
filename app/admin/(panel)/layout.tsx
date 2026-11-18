@@ -29,6 +29,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       items: [
         { href: '/admin/manadsgivare', label: 'Månadsgivare', icon: 'donors' },
         { href: '/admin/live-lista', label: 'Live-lista', icon: 'event' },
+        { href: '/admin/inbjudningar', label: 'Inbjudningar', icon: 'users' },
         { href: '/admin/utskick', label: 'Utskick', icon: 'messages' }
       ]
     },

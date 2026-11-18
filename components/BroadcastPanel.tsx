@@ -48,8 +48,12 @@ export default function BroadcastPanel() {
     return address && !isSwedishSmsAddress(address);
   }).length : 0;
   const visible = group.filter(r => `${r.full_name} ${r.phone || ''} ${r.email}`.toLowerCase().includes(search.toLowerCase()) && (channel !== 'sms' || smsRegion === 'all' || (smsRegion === 'sweden' ? isSwedishSmsAddress(recipientAddress(r, 'sms')) : !!recipientAddress(r, 'sms') && !isSwedishSmsAddress(recipientAddress(r, 'sms')))));
-  const smsYes = recipients.filter(r => !r.comm_opt_out && r.comm_sms);
-  const smsNo = recipients.filter(r => r.comm_opt_out || !r.comm_sms);
+  // The same person can exist as a legacy donor and as a mirrored profile: list each phone number once.
+  const person = (r: BroadcastRecipient) => recipientAddress({ ...r, comm_opt_out: false, comm_sms: true }, 'sms') || r.id;
+  const uniquePeople = (rows: BroadcastRecipient[]) => { const seen = new Set<string>(); return rows.filter(r => { const key = person(r); if (seen.has(key)) return false; seen.add(key); return true; }); };
+  const smsYes = uniquePeople(recipients.filter(r => !r.comm_opt_out && r.comm_sms));
+  const smsYesKeys = new Set(smsYes.map(person));
+  const smsNo = uniquePeople(recipients.filter(r => (r.comm_opt_out || !r.comm_sms) && !smsYesKeys.has(person(r))));
   const chosen = eligible.filter(r => selected.includes(r.id));
   const reach = new Set(chosen.map(r => recipientAddress(r, channel))).size;
   const text = channel === 'whatsapp' ? template?.body || '' : message.trim();

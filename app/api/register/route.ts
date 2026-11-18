@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { validateRegistration } from '@/lib/registration';
 import { registrationIssues } from '@/lib/registration-errors';
+import { cleanInviteCode } from '@/lib/invites';
 
 // Best-effort per-IP limit (in-memory: per server instance). Enough to stop
 // casual form spam; use a shared store or a CAPTCHA if abuse gets serious.
@@ -35,6 +36,13 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('Registration failed:', error.code);
       return NextResponse.json({ error: 'unavailable' }, { status: error.code === 'P0002' ? 409 : 503 });
+    }
+    // Tie the registration to the invitation link it came from. Best effort: a bad or
+    // unknown code must never turn a recorded pledge into an error.
+    const inviteCode = cleanInviteCode((body as { inviteCode?: unknown }).inviteCode);
+    if (inviteCode) {
+      try { await supabaseAdmin().rpc('attach_invite', { registration_ref: data.reference, invite_code: inviteCode }); }
+      catch { /* ignore */ }
     }
     return NextResponse.json({ ok: true, reference: data.reference, status: data.status }, { status: 201 });
   } catch {

@@ -9,7 +9,7 @@ import { registrationIssues, issueText, RegistrationIssue } from '@/lib/registra
 // Registration + GDPR consent capture. Submits to /api/register, which
 // writes the donor, the pending donation/plan, and an immutable consent_log
 // row server-side using the service-role key (see lib/supabase/server.ts).
-export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; transparencyFiles: TransparencyFile[] }) {
+export default function RegisterForm({ lang, transparencyFiles, inviteCode = null }: { lang: Lang; transparencyFiles: TransparencyFile[]; inviteCode?: string | null }) {
   const t = useT();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,7 +54,7 @@ export default function RegisterForm({ lang, transparencyFiles }: { lang: Lang; 
     const payload = {
       fullName: name, email, phone, amountSek: Number(amount), preferredLanguage: lang,
       frequency, months: frequency === 'monthly' ? months : null, comms,
-      website: honeypot, gdprConsent: consent, publicDisplayConsent, paymentMethod, displayMode, displayName
+      website: honeypot, inviteCode, gdprConsent: consent, publicDisplayConsent, paymentMethod, displayMode, displayName
     };
     const problems = registrationIssues(payload);
     if (problems.length) { setIssues(problems); return; }
