@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const scope = {};
+new Function('exports', ts.transpileModule(fs.readFileSync('lib/invites.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(scope);
+const { cleanInviteCode, cleanInviteName, makeInviteCode, inviteUrl } = scope;
+assert.equal(cleanInviteCode(' Ali-K3X9 '), 'ali-k3x9');
+for (const bad of [undefined, 5, 'ab', 'has space', 'a/b', 'x'.repeat(41), '../etc']) assert.equal(cleanInviteCode(bad), null);
+assert.equal(cleanInviteName('  Ali   Hassan '), 'Ali Hassan');
+assert.equal(cleanInviteName('   '), null);
+assert.equal(cleanInviteName('x'.repeat(200)).length, 80);
+assert.match(makeInviteCode('Åsa Öberg'), /^asa-oberg-[a-z0-9]{4}$/);
+assert.match(makeInviteCode(null), /^inbjudan-[a-z0-9]{4}$/);
+assert.match(makeInviteCode('علي'), /^inbjudan-[a-z0-9]{4}$/);
+assert.notEqual(makeInviteCode('Ali'), makeInviteCode('Ali'));
+assert.ok(cleanInviteCode(makeInviteCode('A very long name that goes on and on and on')));
+assert.equal(inviteUrl('https://x.se/', 'ali-1234'), 'https://x.se/?ref=ali-1234');
+console.log('Invite link helpers passed.');

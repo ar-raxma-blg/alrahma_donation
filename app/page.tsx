@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { paypalUrl, qrSvg, swishUrl } from '@/lib/qr';
 
 import { PublicDonation } from '@/lib/types';
+import { cleanInviteCode } from '@/lib/invites';
 import TrackerClient from './TrackerClient';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { publicRaised } from '@/lib/homepage';
@@ -34,7 +35,7 @@ function demoDonations(): PublicDonation[] {
   }));
 }
 
-export default async function TrackerPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ demo?: string }> }) {
+export default async function TrackerPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ demo?: string; ref?: string }> }) {
   const searchParams = await searchParamsPromise;
   const demo = process.env.NODE_ENV !== 'production' && searchParams.demo === '1';
   // Public reads use the publishable key and the public_donations view; only
@@ -99,6 +100,7 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
       showLiveFeed={settings?.show_live_feed !== false}
       projectImageUrl={settings?.project_image_url || null}
       org={resolveController(settings?.privacy_policy)}
+      inviteCode={cleanInviteCode(searchParams.ref)}
     />
     </TranslationProvider>
   );
