@@ -92,6 +92,7 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
       qrCodes={qrCodes}
       goal={Number(totals?.goal_sek ?? 0)}
       raised={demo ? 3250000 : publicRaised(totals)}
+      updatedAt={demo ? null : totals?.updated_at ?? null}
       refreshProgress={!demo}
       initialDonations={demo ? demoDonations() : donations ?? []}
       subtitle={null}

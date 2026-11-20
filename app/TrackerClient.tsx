@@ -20,6 +20,7 @@ import ShareInvite from '@/components/ShareInvite';
 export default function TrackerClient({
   goal,
   raised,
+  updatedAt = null,
   initialDonations,
   subtitle,
   isLive,
@@ -33,6 +34,7 @@ export default function TrackerClient({
 }: {
   goal: number;
   raised: number;
+  updatedAt?: string | null;
   initialDonations: PublicDonation[];
   subtitle?: string | null;
   isLive: boolean;
@@ -64,7 +66,7 @@ export default function TrackerClient({
         <main id="main" tabIndex={-1} className="outline-none">
         <h1 className="sr-only">{t(lang, 'heroTitle')}</h1>
         <div className="mb-5 sm:mb-6">
-          <ProgressCard lang={lang} raised={raised} goal={goal} refresh={refreshProgress} />
+          <ProgressCard lang={lang} raised={raised} goal={goal} updatedAt={updatedAt} refresh={refreshProgress} />
         </div>
 
         {isLive ? (
