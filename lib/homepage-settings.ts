@@ -35,6 +35,7 @@ export const homepageSchema = z.object({
   bic: text.refine(v => !v || /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(v.toUpperCase()), 'Ange en giltig BIC/SWIFT-kod.'),
   account_holder: text, bank_name: text, account_number: text,
   swish_qr_url: qrImage, paypal_qr_url: qrImage,
+  show_qr_codes: z.boolean().optional(), show_bank_transfer: z.boolean().optional(),
   goal_sek: z.number().int().min(1, 'Målet måste vara större än noll.').max(1_000_000_000),
   raised_sek: z.number().int().min(0, 'Insamlat får inte vara negativt.').max(1_000_000_000),
   expected_settings_at: z.string().datetime({ offset: true }),

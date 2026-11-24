@@ -20,6 +20,7 @@ import ShareInvite from '@/components/ShareInvite';
 export default function TrackerClient({
   goal,
   raised,
+  updatedAt = null,
   initialDonations,
   subtitle,
   isLive,
@@ -33,6 +34,7 @@ export default function TrackerClient({
 }: {
   goal: number;
   raised: number;
+  updatedAt?: string | null;
   initialDonations: PublicDonation[];
   subtitle?: string | null;
   isLive: boolean;
@@ -46,6 +48,8 @@ export default function TrackerClient({
 }) {
   const t = useT();
   const [lang, setLang] = useLang('en');
+  const hasQr = !!(qrCodes.swish || qrCodes.paypal || qrCodes.card);
+  const hasBank = !!qrCodes.bank?.rows?.length;
   // Per-language tab title + description (crawlers get the English defaults from layout.tsx).
   useEffect(() => {
     document.title = t(lang, 'metaTitle');
@@ -64,12 +68,13 @@ export default function TrackerClient({
         <main id="main" tabIndex={-1} className="outline-none">
         <h1 className="sr-only">{t(lang, 'heroTitle')}</h1>
         <div className="mb-5 sm:mb-6">
-          <ProgressCard lang={lang} raised={raised} goal={goal} refresh={refreshProgress} />
+          <ProgressCard lang={lang} raised={raised} goal={goal} updatedAt={updatedAt} refresh={refreshProgress} />
         </div>
 
         {isLive ? (
           <>
-            <div id="donate" className="grid items-start gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+            {/* When only one of the two payment blocks is shown it takes the full width. */}
+            <div id="donate" className={`grid items-start gap-5 sm:gap-6 ${hasQr && hasBank ? 'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]' : ''}`}>
               <PaymentQR lang={lang} codes={qrCodes} />
 
               <div className="flex flex-col gap-5 sm:gap-6">
