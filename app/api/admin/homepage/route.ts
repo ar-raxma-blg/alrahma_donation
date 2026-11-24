@@ -5,7 +5,7 @@ import { publicRaised } from '@/lib/homepage';
 import { homepageSchema } from '@/lib/homepage-settings';
 import { revalidatePath } from 'next/cache';
 
-const fields = 'swish_number, paypal_link, card_link, bankgiro, plusgiro, iban, bic, account_holder, bank_name, account_number, swish_qr_url, paypal_qr_url, updated_at';
+const fields = 'swish_number, paypal_link, card_link, bankgiro, plusgiro, iban, bic, account_holder, bank_name, account_number, swish_qr_url, paypal_qr_url, show_qr_codes, show_bank_transfer, updated_at';
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin(req, 'owner');
   if (guard) return guard;

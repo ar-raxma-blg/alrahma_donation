@@ -72,16 +72,18 @@ export default async function TrackerPage({ searchParams: searchParamsPromise }:
       ['accountNumber', settings?.account_number]
     ] as [string, string | undefined][]
   ).filter(([, v]) => v && v.trim()) as [string, string][];
+  const showQr = settings?.show_qr_codes !== false;
+  const showBank = settings?.show_bank_transfer !== false;
   const qrCodes = {
-    swish: swish || settings?.swish_qr_url ? { kind: 'swish' as const, svg: swish ? await qrSvg(swish) : undefined, imageUrl: settings?.swish_qr_url || undefined, detail: settings?.swish_number || undefined } : undefined,
+    swish: !showQr ? undefined : swish || settings?.swish_qr_url ? { kind: 'swish' as const, svg: swish ? await qrSvg(swish) : undefined, imageUrl: settings?.swish_qr_url || undefined, detail: settings?.swish_number || undefined } : undefined,
     // PayPal only uses its own configured link/image; never reuse Swish here.
-    paypal: settings?.paypal_qr_url
+    paypal: !showQr ? undefined : settings?.paypal_qr_url
       ? { kind: 'paypal' as const, imageUrl: settings.paypal_qr_url, detail: settings.paypal_link?.replace(/^https?:\/\//i, '') || undefined, href: paypal || undefined }
       : paypal
       ? { kind: 'paypal' as const, svg: await qrSvg(paypal), detail: settings!.paypal_link.replace(/^https?:\/\//i, ''), href: paypal! }
       : undefined,
     card: card ? { kind: 'card' as const, svg: await qrSvg(card), detail: settings!.card_link.replace(/^https?:\/\//i, ''), href: card! } : undefined,
-    bank: bankRows.length
+    bank: showBank && bankRows.length
       ? { kind: 'bank' as const, rows: bankRows }
       : undefined
   };

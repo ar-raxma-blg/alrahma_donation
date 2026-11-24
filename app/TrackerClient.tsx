@@ -48,6 +48,8 @@ export default function TrackerClient({
 }) {
   const t = useT();
   const [lang, setLang] = useLang('en');
+  const hasQr = !!(qrCodes.swish || qrCodes.paypal || qrCodes.card);
+  const hasBank = !!qrCodes.bank?.rows?.length;
   // Per-language tab title + description (crawlers get the English defaults from layout.tsx).
   useEffect(() => {
     document.title = t(lang, 'metaTitle');
@@ -71,7 +73,8 @@ export default function TrackerClient({
 
         {isLive ? (
           <>
-            <div id="donate" className="grid items-start gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+            {/* When only one of the two payment blocks is shown it takes the full width. */}
+            <div id="donate" className={`grid items-start gap-5 sm:gap-6 ${hasQr && hasBank ? 'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]' : ''}`}>
               <PaymentQR lang={lang} codes={qrCodes} />
 
               <div className="flex flex-col gap-5 sm:gap-6">
