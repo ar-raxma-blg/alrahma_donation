@@ -1,18 +1,24 @@
 import { Lang } from '@/lib/types';
 import { useT } from '@/components/TranslationProvider';
 import { CARD } from './PaymentQR';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { campaignProgress } from '@/lib/homepage';
 
+const parse = (v: string | null | undefined) => { const d = v ? new Date(v) : null; return d && !Number.isNaN(d.getTime()) ? d : null; };
 const num = (n: number) => n.toLocaleString('sv-SE');
 
-export default function ProgressCard({ lang, raised: initialRaised, goal: initialGoal, refresh = false }: { lang: Lang; raised: number; goal: number; refresh?: boolean }) {
+export default function ProgressCard({ lang, raised: initialRaised, goal: initialGoal, updatedAt: initialUpdatedAt = null, refresh = false }: { lang: Lang; raised: number; goal: number; updatedAt?: string | null; refresh?: boolean }) {
   const t = useT();
   const [values, setValues] = useState({ raised: initialRaised, goal: initialGoal });
-  // Set on the client only (avoids a server/client time mismatch).
-  const [updated, setUpdated] = useState<Date | null>(null);
-  useEffect(() => { setUpdated(new Date()); }, []);
-  useEffect(() => { setValues({ raised: initialRaised, goal: initialGoal }); }, [initialRaised, initialGoal]);
+  // When the total last changed, as recorded by the server (same for every visitor).
+  const [updated, setUpdated] = useState<Date | null>(() => parse(initialUpdatedAt));
+  useEffect(() => { setUpdated(parse(initialUpdatedAt)); }, [initialUpdatedAt]);
+  // Ticks so "15 minutes ago" keeps moving without a refetch.
+  // Starts null so server and client render the same markup; set after mount.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => { setNow(Date.now()); const id = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(id); }, []);
+  const latest = useRef({ raised: initialRaised, goal: initialGoal });
+  useEffect(() => { latest.current = { raised: initialRaised, goal: initialGoal }; setValues(latest.current); }, [initialRaised, initialGoal]);
   useEffect(() => {
     if (!refresh) return;
     let active = true;
@@ -21,7 +27,10 @@ export default function ProgressCard({ lang, raised: initialRaised, goal: initia
       try {
         const response = await fetch('/api/public/progress', { cache: 'no-store', signal: controller.signal });
         const data = await response.json();
-        if (active && response.ok && Number.isFinite(data.raised) && data.raised >= 0 && Number.isFinite(data.goal) && data.goal > 0) { setValues(data); setUpdated(new Date()); }
+        if (active && response.ok && Number.isFinite(data.raised) && data.raised >= 0 && Number.isFinite(data.goal) && data.goal > 0) {
+          if (data.raised !== latest.current.raised || data.goal !== latest.current.goal) { latest.current = { raised: data.raised, goal: data.goal }; setValues({ raised: data.raised, goal: data.goal }); }
+          setUpdated(parse(data.updatedAt));
+        }
       } catch { /* Keep the last successful totals when offline. */ }
     };
     void update();
@@ -33,6 +42,16 @@ export default function ProgressCard({ lang, raised: initialRaised, goal: initia
   }, [refresh]);
   const { raised, goal, barPercent, displayed } = campaignProgress(values.raised, values.goal);
   const percentage = displayed === null ? '<0.1' : new Intl.NumberFormat(lang === 'ar' ? 'ar' : lang === 'sv' ? 'sv-SE' : 'en-GB', { maximumFractionDigits: 1 }).format(displayed);
+
+  const locale = lang === 'ar' ? 'ar' : lang === 'sv' ? 'sv-SE' : 'en-GB';
+  const ago = (from: Date) => {
+    const minutes = Math.max(0, Math.floor(((now ?? 0) - from.getTime()) / 60000));
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    if (minutes < 1) return ({ sv: 'nyss', ar: 'الآن', en: 'just now' } as Record<string, string>)[lang] ?? 'just now';
+    if (minutes < 60) return rtf.format(-minutes, 'minute');
+    if (minutes < 1440) return rtf.format(-Math.floor(minutes / 60), 'hour');
+    return rtf.format(-Math.floor(minutes / 1440), 'day');
+  };
 
   return (
     <section aria-labelledby="progress-title" className={`${CARD} p-5 sm:p-8`}>
@@ -74,9 +93,9 @@ export default function ProgressCard({ lang, raised: initialRaised, goal: initia
         <p className="mt-3 text-base text-mosque-cream" dir="ltr">
           <strong>{num(raised)} kr</strong> {t(lang, 'raisedOfGoal')} <strong>{goal > 0 ? `${num(goal)} kr` : '—'}</strong>
         </p>
-        {updated && (
+        {updated && now !== null && (
           <p className="mt-1 text-sm text-mosque-muted">
-            {t(lang, 'updatedAt')} <time dateTime={updated.toISOString()}>{updated.toLocaleTimeString(lang === 'ar' ? 'ar' : lang === 'sv' ? 'sv-SE' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</time>
+            {t(lang, 'updatedAt')} <time dateTime={updated.toISOString()} title={updated.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}>{ago(updated)}</time>
           </p>
         )}
       </div>

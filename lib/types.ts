@@ -72,6 +72,8 @@ export interface CampaignSettings {
   card_link: string;
   swish_qr_url: string;
   paypal_qr_url: string;
+  show_qr_codes?: boolean;
+  show_bank_transfer?: boolean;
   is_live: boolean;
   paused_message: string;
   transparency_files: TransparencyFile[];
