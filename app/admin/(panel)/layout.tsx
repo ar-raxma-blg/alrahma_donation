@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import AdminNav, { NavGroup } from '@/components/admin/AdminNav';
+import IdleLogout from '@/components/admin/IdleLogout';
 import NotAdmin from '@/components/admin/NotAdmin';
 import { getAdminUser, getSessionUser } from '@/lib/auth';
 import { getTodoCounts } from '@/lib/admin/queries';
@@ -48,6 +49,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col bg-mosque-cream text-mosque-ink lg:flex-row">
       <a href="#admin-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:font-bold">Hoppa till innehållet</a>
+      <IdleLogout />
       <AdminNav groups={groups} userName={user.name} />
       <main id="admin-content" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10"><div className="mx-auto w-full max-w-5xl">{children}</div></main>
     </div>

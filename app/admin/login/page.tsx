@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,6 +12,12 @@ export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('reason') === 'idle') {
+      setError('Du loggades ut automatiskt efter 15 minuters inaktivitet. Logga in igen.');
+    }
+  }, []);
 
   const login = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
