@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+
+:root {
+  --font-jakarta: 'Plus Jakarta Sans';
+  --font-naskh: 'Noto Naskh Arabic';
+}
+
 html {
   /* Respect the visitor's own text-size setting; 100% = 16px by default. */
   font-size: 100%;

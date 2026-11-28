@@ -1,21 +1,12 @@
-import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Noto_Naskh_Arabic } from 'next/font/google';
+import '@fontsource/plus-jakarta-sans/400.css';
+import '@fontsource/plus-jakarta-sans/600.css';
+import '@fontsource/plus-jakarta-sans/700.css';
+import '@fontsource/plus-jakarta-sans/800.css';
+import '@fontsource/noto-naskh-arabic/400.css';
+import '@fontsource/noto-naskh-arabic/700.css';
 import './globals.css';
 
-// Self-hosted by next/font: no render-blocking CSS @import, font-display: swap,
-// and only the weights that are actually used.
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-jakarta'
-});
-const naskh = Noto_Naskh_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '700'],
-  display: 'swap',
-  variable: '--font-naskh'
-});
+import type { Metadata, Viewport } from 'next';
 
 const TITLE = 'Al-Rahma Mosque Borlänge — New Minaret & Hall Fund';
 const DESCRIPTION =
@@ -60,7 +51,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // lang/dir are updated on the client when the visitor switches language (see lib/use-lang.ts).
   return (
-    <html lang="en" dir="ltr" className={`${jakarta.variable} ${naskh.variable}`}>
+    <html lang="en" dir="ltr">
       <body className="bg-mosque-cream font-sans text-mosque-ink">
         <a
           href="#main"
